@@ -1,4 +1,6 @@
 use bitflags::*;
+use std::collections::HashMap;
+use crate::opcodes;
 
 bitflags! {
     #[repr(transparent)]
@@ -169,36 +171,29 @@ impl CPU {
     }
 
     pub fn run(&mut self) {
+        let ref opcodes: HashMap<u8, &'static opcodes::OpCode> = *opcodes::OPCODE_MAP;
+
         loop {
-            let opcode = self.memory_read_u8(self.reg_pc);
+            let code = self.memory_read_u8(self.reg_pc);
             self.reg_pc += 1;
-            match opcode {
-                0xA9 => {
-                    self.lda(&AddressingMode::Immediate);
-                    self.reg_pc += 1;
-                },
-                0xA5 => {
-                    self.lda(&AddressingMode::ZeroPage);
-                    self.reg_pc += 1;
-                },
-                0xAD => {
-                    self.lda(&AddressingMode::Absolute);
-                    self.reg_pc += 2;
-                },
+            let pc_state = self.reg_pc;
+            let opcode = opcodes.get(&code).expect(&format!("OpCode: {:?} is not recognized", code));
 
-                0x85 => {
-                    self.sta(&AddressingMode::ZeroPage);
-                    self.reg_pc += 1;
+            match opcode.code {
+                0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
+                    // LDA
+                    self.lda(&opcode.mode);
                 },
-                0x95 => {
-                    self.sta(&AddressingMode::ZeroPage_X);
-                    self.reg_pc += 1;
+                0x85 | 0x95 | 0x8d | 0x9d | 0x99 | 0x81 | 0x91 => {
+                    // STA
+                    self.sta(&opcode.mode);
                 },
-
-                0xAA => {
+                0xaa => {
+                    // TAX
                     self.tax();
                 },
-                0xE8 => {
+                0xe8 => {
+                    // INX
                     self.inx();
                 },
                 0x00 => {
@@ -206,6 +201,9 @@ impl CPU {
                     return;
                 },
                 _ => todo!()
+            }
+            if pc_state == self.reg_pc {
+                self.reg_pc += (opcode.len - 1) as u16;
             }
         }
     }
