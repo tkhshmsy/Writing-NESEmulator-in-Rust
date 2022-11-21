@@ -1,3 +1,4 @@
+use _core::ops::Add;
 use bitflags::*;
 use std::collections::HashMap;
 use crate::opcodes;
@@ -122,16 +123,104 @@ impl CPU {
         }
     }
 
-    fn lda(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        let value = self.memory_read_u8(addr);
-        self.reg_a = value;
-        self.update_cpuflags(self.reg_a);
+    fn adc(&mut self, mode: &AddressingMode) {
+        // TODO
     }
 
-    fn tax(&mut self) {
-        self.reg_x = self.reg_a;
-        self.update_cpuflags(self.reg_x);
+    fn and(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn asl(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn bcc(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn bcs(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn beq(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn bit(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn bmi(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn bne(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn bpl(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn brk(&mut self, mode: &AddressingMode) {
+        // NOTHING
+    }
+
+    fn bvc(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn bvs(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn clc(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn cld(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn cli(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn clv(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn cmp(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn cpx(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn cpy(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn dec(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn dex(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn dey(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn eor(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn inc(&mut self, mode: &AddressingMode) {
+        // TODO
     }
 
     fn inx(&mut self) {
@@ -139,10 +228,129 @@ impl CPU {
         self.update_cpuflags(self.reg_x);
     }
 
+    fn iny(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn jmp(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn jsr(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn lda(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        self.reg_a = value;
+        self.update_cpuflags(self.reg_a);
+    }
+
+    fn ldx(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn ldy(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn lsr(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn nop(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn ora(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn pha(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn php(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn pla(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn plp(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn rol(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn ror(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn rti(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn rts(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn sbc(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn sec(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn sed(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn sei(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
     fn sta(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
-        println!("sta addr:{:?}", addr);
         self.memory_write_u8(addr, self.reg_a);
+    }
+
+    fn stx(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn sty(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn tax(&mut self) {
+        self.reg_x = self.reg_a;
+        self.update_cpuflags(self.reg_x);
+    }
+
+    fn tay(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn tsx(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn txa(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn txs(&mut self, mode: &AddressingMode) {
+        // TODO
+    }
+
+    fn tya(&mut self, mode: &AddressingMode) {
+        // TODO
     }
 
     fn update_cpuflags(&mut self, result: u8) {
