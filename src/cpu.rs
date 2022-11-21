@@ -1,4 +1,3 @@
-use _core::ops::Add;
 use bitflags::*;
 use std::collections::HashMap;
 use crate::opcodes;
@@ -124,103 +123,158 @@ impl CPU {
     }
 
     fn adc(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        let result = self.reg_a.overflowing_add(value);
+        self.status.set(CpuFlags::CARRY, result.1);
+        self.status.set(CpuFlags::OVERFLOW, (result.0 ^ value) & (result.0 ^ self.reg_a) & 0x80 != 0x00);
+        self.reg_a = result.0;
+        self.update_cpuflags(self.reg_a);
     }
 
     fn and(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        self.reg_a = self.reg_a & value;
+        self.update_cpuflags(self.reg_a);
+    }
+
+    fn asl_accumulator(&mut self) {
+        let value = self.reg_a;
+        self.status.set(CpuFlags::CARRY, value & 0x80 == 0x80);
+        self.reg_a = value << 1;
+        self.update_cpuflags(self.reg_a);
     }
 
     fn asl(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        self.status.set(CpuFlags::CARRY, value & 0x80 == 0x80);
+        self.memory_write_u8(addr, value << 1);
+        self.update_cpuflags(self.reg_a);
     }
 
-    fn bcc(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn bcc(&mut self) {
+        if !self.status.contains(CpuFlags::CARRY) {
+            self.branch();
+        }
     }
 
-    fn bcs(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn bcs(&mut self) {
+        if self.status.contains(CpuFlags::CARRY) {
+            self.branch();
+        }
     }
 
-    fn beq(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn beq(&mut self) {
+        if self.status.contains(CpuFlags::ZERO) {
+            self.branch();
+        }
     }
 
     fn bit(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        self.status.set(CpuFlags::ZERO, self.reg_a & value == 0x00);
+        self.status.set(CpuFlags::OVERFLOW, value & 0x40 == 0x40);
+        self.status.set(CpuFlags::NEGATIVE, value & 0x80 == 0x80);
     }
 
-    fn bmi(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn bmi(&mut self) {
+        if self.status.contains(CpuFlags::NEGATIVE) {
+            self.branch();
+        }
     }
 
-    fn bne(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn bne(&mut self) {
+        if !self.status.contains(CpuFlags::ZERO) {
+            self.branch();
+        }
     }
 
-    fn bpl(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn bpl(&mut self) {
+        if !self.status.contains(CpuFlags::NEGATIVE) {
+            self.branch();
+        }
     }
 
-    fn brk(&mut self, mode: &AddressingMode) {
-        // NOTHING
+    fn bvc(&mut self) {
+        if !self.status.contains(CpuFlags::OVERFLOW) {
+            self.branch();
+        }
     }
 
-    fn bvc(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn bvs(&mut self) {
+        if self.status.contains(CpuFlags::OVERFLOW) {
+            self.branch();
+        }
     }
 
-    fn bvs(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn clc(&mut self) {
+        self.status.set(CpuFlags::CARRY, false);
     }
 
-    fn clc(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn cld(&mut self) {
+        self.status.set(CpuFlags::DECIMAL_MODE, false);
     }
 
-    fn cld(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn cli(&mut self) {
+        self.status.set(CpuFlags::INTERRUPT_DISABLE, false);
     }
 
-    fn cli(&mut self, mode: &AddressingMode) {
-        // TODO
-    }
-
-    fn clv(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn clv(&mut self) {
+        self.status.set(CpuFlags::OVERFLOW, false);
     }
 
     fn cmp(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value =  self.memory_read_u8(addr);
+        self.compare(self.reg_a, value);
     }
 
     fn cpx(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr =  self.get_operand_address(mode);
+        let value =  self.memory_read_u8(addr);
+        self.compare(self.reg_x, value);
     }
 
     fn cpy(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr =  self.get_operand_address(mode);
+        let value =  self.memory_read_u8(addr);
+        self.compare(self.reg_y, value);
     }
 
     fn dec(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr =  self.get_operand_address(mode);
+        let mut value =  self.memory_read_u8(addr);
+        value = value.wrapping_sub(1);
+        self.memory_write_u8(addr, value);
+        self.update_cpuflags(value);
     }
 
-    fn dex(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn dex(&mut self) {
+        self.reg_x = self.reg_x.wrapping_sub(1);
+        self.update_cpuflags(self.reg_x);
     }
 
-    fn dey(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn dey(&mut self) {
+        self.reg_y = self.reg_y.wrapping_sub(1);
+        self.update_cpuflags(self.reg_y);
     }
 
     fn eor(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr =  self.get_operand_address(mode);
+        let value =  self.memory_read_u8(addr);
+        self.reg_a = self.reg_a ^ value;
+        self.update_cpuflags(self.reg_a);
     }
 
     fn inc(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr =  self.get_operand_address(mode);
+        let mut value =  self.memory_read_u8(addr);
+        value = value.wrapping_add(1);
+        self.memory_write_u8(addr, value);
+        self.update_cpuflags(value);
     }
 
     fn inx(&mut self) {
@@ -228,8 +282,9 @@ impl CPU {
         self.update_cpuflags(self.reg_x);
     }
 
-    fn iny(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn iny(&mut self) {
+        self.reg_y = self.reg_y.wrapping_add(1);
+        self.update_cpuflags(self.reg_y);
     }
 
     fn jmp(&mut self, mode: &AddressingMode) {
@@ -333,8 +388,9 @@ impl CPU {
         self.update_cpuflags(self.reg_x);
     }
 
-    fn tay(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn tay(&mut self) {
+        self.reg_y = self.reg_a;
+        self.update_cpuflags(self.reg_y);
     }
 
     fn tsx(&mut self, mode: &AddressingMode) {
@@ -353,9 +409,20 @@ impl CPU {
         // TODO
     }
 
-    fn update_cpuflags(&mut self, result: u8) {
-        self.status.set(CpuFlags::ZERO, if result == 0 { true } else { false });
-        self.status.set(CpuFlags::NEGATIVE, if result & 0b1000_0000 != 0 { true } else { false });
+    fn update_cpuflags(&mut self, data: u8) {
+        self.status.set(CpuFlags::ZERO, data == 0);
+        self.status.set(CpuFlags::NEGATIVE, data & 0b1000_0000 != 0);
+    }
+
+    fn branch(&mut self) {
+        let dst = self.memory_read_u8(self.reg_pc) as i8;
+        let addr = self.reg_pc.wrapping_add(1).wrapping_add(dst as u16);
+        self.reg_pc = addr;
+    }
+
+    fn compare(&mut self, lhs: u8, rhs: u8) {
+        self.status.set(CpuFlags::CARRY, lhs >= rhs);
+        self.update_cpuflags(lhs.wrapping_sub(rhs));
     }
 
     pub fn reset(&mut self) {
@@ -388,6 +455,120 @@ impl CPU {
             let opcode = opcodes.get(&code).expect(&format!("OpCode: {:?} is not recognized", code));
 
             match opcode.code {
+                0x69 | 0x65 | 0x75 | 0x6d | 0x7d | 0x79 | 0x61 | 0x71 => {
+                    // ADC
+                    self.adc(&opcode.mode);
+                },
+                0x29 | 0x25 | 0x35 | 0x2d | 0x3d | 0x39 | 0x21 | 0x31 => {
+                    // AND
+                    self.and(&opcode.mode);
+                },
+                0x0a => {
+                    // ASL Accumulator
+                    self.asl_accumulator();
+                },
+                0x06 | 0x16 | 0x0e | 0x1e => {
+                    // ASL
+                    self.asl(&opcode.mode);
+                },
+                0x90 => {
+                    // BCC
+                    self.bcc();
+                },
+                0xb0 => {
+                    // BCS
+                    self.bcs();
+                },
+                0xf0 => {
+                    // BEQ
+                    self.beq();
+                },
+                0x24 | 0x2c => {
+                    // BIT
+                    self.bit(&opcode.mode);
+                },
+                0x30 => {
+                    // BMI
+                    self.bmi();
+                },
+                0xd0 => {
+                    // BNE
+                    self.bne();
+                },
+                0x10 => {
+                    // BPL
+                    self.bpl();
+                },
+                0x00 => {
+                    // BRK
+                    return;
+                },
+                0x50 => {
+                    // BVC
+                    self.bvc();
+                },
+                0x70 => {
+                    // BVS
+                    self.bvs();
+                },
+                0x18 => {
+                    // CLC
+                    self.clc();
+                },
+                0xd8 => {
+                    // CLD
+                    self.cld();
+                },
+                0x58 => {
+                    // CLI
+                    self.cli();
+                },
+                0xb8 => {
+                    // CLV
+                    self.clv();
+                },
+                0xc9 | 0xc5 | 0xd5 | 0xcd | 0xdd | 0xd9 | 0xc1 | 0xd1 => {
+                    // CMP
+                    self.cmp(&opcode.mode);
+                },
+                0xe0 | 0xe4 | 0xec => {
+                    // CPX
+                    self.cpx(&opcode.mode);
+                },
+                0xc0 | 0xc4 | 0xcc => {
+                    // CPY
+                    self.cpy(&opcode.mode);
+                },
+                0xc6 | 0xd6 | 0xce | 0xde => {
+                    // DEC
+                    self.dec(&opcode.mode);
+                },
+                0xca => {
+                    // DEX
+                    self.dex();
+                },
+                0x88 => {
+                    // DEY
+                    self.dey();
+                },
+                0x49 | 0x45 | 0x55 | 0x4d | 0x5d | 0x59 | 0x41 | 0x51 => {
+                    // EOR
+                    self.eor(&opcode.mode);
+                },
+                0xe6 | 0xf6 | 0xee | 0xfe => {
+                    // INC
+                    self.inc(&opcode.mode);
+                },
+                0xe8 => {
+                    // INX
+                    self.inx();
+                },
+                0xc8 => {
+                    // INY
+                    self.iny();
+                },
+
+
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
                     // LDA
                     self.lda(&opcode.mode);
@@ -400,13 +581,9 @@ impl CPU {
                     // TAX
                     self.tax();
                 },
-                0xe8 => {
-                    // INX
-                    self.inx();
-                },
-                0x00 => {
-                    // BRK
-                    return;
+                0xa8 => {
+                    // TAY
+                    self.tay();
                 },
                 _ => todo!()
             }
@@ -422,7 +599,7 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_0xa9_lda_immidiate_load_data() {
+    fn test_0xa9_lda_immidiate() {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x05, 0x00]);
         assert_eq!(cpu.reg_a, 0x05);
@@ -431,17 +608,10 @@ mod test {
     }
 
     #[test]
-    fn test_0xa9_lda_zero_flag() {
+    fn test_0xa9_lda_immidiate_for_z() {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
         assert!(cpu.status.contains(CpuFlags::ZERO) == true);
-    }
-
-    #[test]
-    fn test_0xaa_tax_move_a_to_x() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x0a, 0xaa, 0x00]);
-        assert_eq!(cpu.reg_x, 10);
     }
 
     #[test]
@@ -449,13 +619,6 @@ mod test {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
         assert_eq!(cpu.reg_x, 0xc1);
-    }
-
-    #[test]
-    fn test_0xe8_inx_overflow() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0xe8, 0x00]);
-        assert_eq!(cpu.reg_x, 1);
     }
 
     #[test]
@@ -481,5 +644,264 @@ mod test {
         let data = cpu.memory_read_u8(0x58);
         assert_eq!(data, 0xaa);
     }
+
+    #[test]
+    fn test_0x69_adc_immidiate_for_no_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x55, 0x69, 0x10, 0x00]);
+        assert_eq!(cpu.reg_a, 0x65);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0x69_adc_immidiate_for_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x55, 0x69, 0xcc, 0x00]);
+        assert_eq!(cpu.reg_a, 33);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0x69_adc_immidiate_for_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x40, 0x69, 0x40, 0x00]);
+        assert_eq!(cpu.reg_a, 0x80);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0x29_and_with_immidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xd5, 0x29, 0xab, 0x00]);
+        assert_eq!(cpu.reg_a, 0b1000_0001);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0x0a_asl_accumulator() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0b1010_0101, 0x0a, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0100_1010);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x06_asl_zeropage() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0b1110_0101, 0x85, 0x03, 0x06, 0x03, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x03), 0b1100_1010);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    // #[test]
+    // fn test_0x90_bcc() {
+    // }
+
+    // #[test]
+    // fn test_0xb0_bcs() {
+    // }
+
+    // #[test]
+    // fn test_0xf0_beq() {
+    // }
+
+    #[test]
+    fn test_0x24_bit_zeropage_for_v_not_nz() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x45, 0x85, 0x03, 0xa9, 0x01, 0x24, 0x03, 0x00]);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::OVERFLOW));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0x24_bit_zeropage_for_nz_not_v() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x80, 0x85, 0x03, 0xa9, 0x7f, 0x24, 0x03, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    // #[test]
+    // fn test_0x30_bmi() {
+    // }
+
+    // #[test]
+    // fn test_0xd0_bne() {
+    // }
+
+    // #[test]
+    // fn test_0x10_bpl() {
+    // }
+
+    // #[test]
+    // fn test_0x50_bvc() {
+    // }
+
+    // #[test]
+    // fn test_0x70_bvs() {
+    // }
+
+    #[test]
+    fn test_0x18_clc() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x80, 0x0a, 0x18, 0x00]);
+        assert!(!cpu.status.contains(CpuFlags::CARRY))
+    }
+
+    // #[test]
+    // fn test_0xd8_cld() {
+    // }
+
+    // #[test]
+    // fn test_0x58_cli() {
+    // }
+
+    #[test]
+    fn test_0xb8_clv() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x40, 0x69, 0x40, 0xb8, 0x00]);
+        assert_eq!(cpu.reg_a, 0x80);
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0xc9_cmp_immidiate_for_cn_not_z() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x88, 0xc9, 0x04, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xc9_cmp_immidiate_for_cz_not_n() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x08, 0xc9, 0x08, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xc9_cmp_immidiate_for_n_not_cz() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x00, 0xc9, 0x01, 0x00]);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    // #[test]
+    // fn test_0x0e_cpx() {
+    // }
+
+    // #[test]
+    // fn test_0xc0_cpy() {
+    // }
+
+    #[test]
+    fn test_0xc6_dec_zeropage_for_not_nz() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x04, 0x85, 0x05, 0xc6, 0x05, 0x00]);
+        let data = cpu.memory_read_u8(0x05);
+        assert_eq!(data, 0x03);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xca_dex_for_z_not_n() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x01, 0xaa, 0xca, 0x00]);
+        assert_eq!(cpu.reg_x, 0x00);
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0x88_dey_for_n_not_z() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x00, 0xa8, 0x88, 0x00]);
+        assert_eq!(cpu.reg_y, 0xff);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0x49_eor_immidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x50, 0x49, 0x14, 0x00]);
+        assert_eq!(cpu.reg_a, 0x44);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xe6_inc_zeropage_for_not_nz() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x04, 0x85, 0x05, 0xe6, 0x05, 0x00]);
+        let data = cpu.memory_read_u8(0x05);
+        assert_eq!(data, 0x05);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xe8_inx_for_z_not_n() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0x00]);
+        assert_eq!(cpu.reg_x, 0x00);
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xe8_inx_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0xe8, 0x00]);
+        assert_eq!(cpu.reg_x, 1);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xc8_iny_for_n_not_z() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x7f, 0xa8, 0xc8, 0x00]);
+        assert_eq!(cpu.reg_y, 0x80);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+
+
+
+
+
+    #[test]
+    fn test_0xaa_tax_move_a_to_x() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x0a, 0xaa, 0x00]);
+        assert_eq!(cpu.reg_x, 10);
+    }
+
+    #[test]
+    fn test_0xa8_tay_move_a_to_y() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x0a, 0xa8, 0x00]);
+        assert_eq!(cpu.reg_y, 10);
+    }
+
+
 }
 

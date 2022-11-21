@@ -44,7 +44,7 @@ lazy_static! {
         OpCode::new(0x31, "AND", 2, 5, AddressingMode::Indirect_Y), // cycle + 1 if page crossed
 
         // ASL - Arithmetic Shift Left
-        OpCode::new(0x0A, "ASL", 1, 2, AddressingMode::Immediate),
+        OpCode::new(0x0A, "ASL", 1, 2, AddressingMode::NonAddressing),
         OpCode::new(0x06, "ASL", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0x16, "ASL", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x0E, "ASL", 3, 6, AddressingMode::Absolute),
@@ -60,7 +60,7 @@ lazy_static! {
         OpCode::new(0xF0, "BEQ", 2, 2, AddressingMode::NonAddressing), // cycle +1 if success, +2 if to new page
 
         // BIT - Bit Test
-        OpCode::new(0x24, "BIT", 2, 3, AddressingMode::Immediate),
+        OpCode::new(0x24, "BIT", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x2C, "BIT", 3, 4, AddressingMode::Absolute),
 
         // BMI - Branch if Minus
@@ -127,13 +127,13 @@ lazy_static! {
 
         // EOR - Exclusive OR
         OpCode::new(0x49, "EOR", 2, 2, AddressingMode::Immediate),
-        OpCode::new(0x45, "EOR", 2, 3, AddressingMode::Immediate),
-        OpCode::new(0x55, "EOR", 2, 4, AddressingMode::Immediate),
-        OpCode::new(0x4D, "EOR", 3, 4, AddressingMode::Immediate),
-        OpCode::new(0x5D, "EOR", 3, 4, AddressingMode::Immediate), // cycle + 1 if page crossed
-        OpCode::new(0x59, "EOR", 3, 4, AddressingMode::Immediate), // cycle + 1 if page crossed
-        OpCode::new(0x41, "EOR", 2, 6, AddressingMode::Immediate),
-        OpCode::new(0x51, "EOR", 2, 5, AddressingMode::Immediate), // cycle + 1 if page crossed
+        OpCode::new(0x45, "EOR", 2, 3, AddressingMode::ZeroPage),
+        OpCode::new(0x55, "EOR", 2, 4, AddressingMode::ZeroPage_X),
+        OpCode::new(0x4D, "EOR", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0x5D, "EOR", 3, 4, AddressingMode::Absolute_X), // cycle + 1 if page crossed
+        OpCode::new(0x59, "EOR", 3, 4, AddressingMode::Absolute_Y), // cycle + 1 if page crossed
+        OpCode::new(0x41, "EOR", 2, 6, AddressingMode::Indirect_X),
+        OpCode::new(0x51, "EOR", 2, 5, AddressingMode::Indirect_Y), // cycle + 1 if page crossed
 
         // INC - Increment Memory
         OpCode::new(0xE6, "INC", 2, 5, AddressingMode::ZeroPage),
@@ -148,11 +148,11 @@ lazy_static! {
         OpCode::new(0xC8, "INY", 1, 2, AddressingMode::NonAddressing),
 
         // JMP - Jump
-        OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::Absolute), // TODO check addressing mode
-        OpCode::new(0x6C, "JMP", 3, 3, AddressingMode::NonAddressing), // TODO Indirect ?
+        OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::NonAddressing),
+        OpCode::new(0x6C, "JMP", 3, 3, AddressingMode::NonAddressing),
 
         // JSR - Jump to Sub Routine
-        OpCode::new(0x20, "JSR", 3, 6, AddressingMode::Absolute),
+        OpCode::new(0x20, "JSR", 3, 6, AddressingMode::NonAddressing),
 
         // LDA - Load Accumulator
         OpCode::new(0xA9, "LDA", 2, 2, AddressingMode::Immediate),
@@ -179,7 +179,7 @@ lazy_static! {
         OpCode::new(0xBC, "LDY", 3, 4, AddressingMode::Absolute_X), // cycle + 1 if page crossed
 
         // LSR - Logical Shift Right
-        OpCode::new(0x4A, "LSR", 1, 2, AddressingMode::NonAddressing), // TODO
+        OpCode::new(0x4A, "LSR", 1, 2, AddressingMode::NonAddressing),
         OpCode::new(0x46, "LSR", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0x56, "LSR", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x4E, "LSR", 3, 6, AddressingMode::Absolute),
@@ -211,14 +211,14 @@ lazy_static! {
         OpCode::new(0x28, "PHP", 1, 4, AddressingMode::NonAddressing),
 
         // ROL - Rotate Left
-        OpCode::new(0x2A, "ROL", 1, 2, AddressingMode::NonAddressing), // TODO
+        OpCode::new(0x2A, "ROL", 1, 2, AddressingMode::NonAddressing),
         OpCode::new(0x26, "ROL", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0x36, "ROL", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x2E, "ROL", 3, 6, AddressingMode::Absolute),
         OpCode::new(0x3E, "ROL", 3, 7, AddressingMode::Absolute_X),
 
         // ROR - Rotate Right
-        OpCode::new(0x6A, "ROR", 1, 2, AddressingMode::NonAddressing), // TODO
+        OpCode::new(0x6A, "ROR", 1, 2, AddressingMode::NonAddressing),
         OpCode::new(0x66, "ROR", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0x76, "ROR", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x6E, "ROR", 3, 6, AddressingMode::Absolute),
