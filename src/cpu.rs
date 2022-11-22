@@ -381,12 +381,52 @@ impl CPU {
         self.status.bits = flags;
     }
 
+    fn rol_accumulator(&mut self) {
+        let value = self.reg_a;
+        let old_carry = self.status.contains(CpuFlags::CARRY);
+        self.status.set(CpuFlags::CARRY, value & 0x80 == 0x80);
+        self.reg_a = value << 1;
+        if old_carry {
+            self.reg_a |= 0x01;
+        }
+        self.update_cpuflags(self.reg_a);
+    }
+
     fn rol(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let mut value = self.memory_read_u8(addr);
+        let old_carry = self.status.contains(CpuFlags::CARRY);
+        self.status.set(CpuFlags::CARRY, value & 0x80== 0x80);
+        value = value << 1;
+        if old_carry {
+            value |= 0x01;
+        }
+        self.memory_write_u8(addr, value);
+        self.update_cpuflags(value);
+    }
+
+    fn ror_accumulator(&mut self) {
+        let value = self.reg_a;
+        let old_carry = self.status.contains(CpuFlags::CARRY);
+        self.status.set(CpuFlags::CARRY, value & 0x01 == 0x01);
+        self.reg_a = value >> 1;
+        if old_carry {
+            self.reg_a |= 0x80;
+        }
+        self.update_cpuflags(self.reg_a);
     }
 
     fn ror(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let mut value = self.memory_read_u8(addr);
+        let old_carry = self.status.contains(CpuFlags::CARRY);
+        self.status.set(CpuFlags::CARRY, value & 0x01 == 0x01);
+        value = value >> 1;
+        if old_carry {
+            value |= 0x80;
+        }
+        self.memory_write_u8(addr, value);
+        self.update_cpuflags(value);
     }
 
     fn rti(&mut self, mode: &AddressingMode) {
@@ -661,7 +701,7 @@ impl CPU {
                 0x4a => {
                     // LSR Accumulator
                     self.lsr_accumulator();
-                }
+                },
                 0x46 | 0x56 | 0x4e | 0x5e => {
                     // LSR
                     self.lsr(&opcode.mode);
@@ -690,6 +730,23 @@ impl CPU {
                     // PHP
                     self.plp();
                 },
+                0x2a => {
+                    // ROL Accumulator
+                    self.rol_accumulator();
+                },
+                0x26 | 0x36 | 0x2e | 0x3e => {
+                    // ROL
+                    self.rol(&opcode.mode);
+                },
+                0x6a => {
+                    // ROR Accumulator
+                    self.ror_accumulator();
+                },
+                0x66 | 0x76 | 0x6e | 0x7e => {
+                    // ROR
+                    self.ror(&opcode.mode);
+                },
+
 
 
 
@@ -1069,6 +1126,46 @@ mod test {
         assert_eq!(cpu.reg_a, 0x00);
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0x2a_rol_accumulator_with_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0b1010_0000, 0x2a, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0100_0001);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x26_rol_zeropage_without_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0b0010_0101, 0x85, 0x03, 0x26, 0x03, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x03), 0b0100_1010);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x6a_ror_accumulator_with_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0b1010_0000, 0x6a, 0x00]);
+        assert_eq!(cpu.reg_a, 0b1101_0000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x66_ror_zeropage_without_carry() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0b1010_0001, 0x85, 0x03, 0x66, 0x03, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x03), 0b0101_0000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
     }
 
 
