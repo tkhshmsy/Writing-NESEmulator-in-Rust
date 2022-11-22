@@ -58,11 +58,11 @@ impl CPU {
         }
     }
 
-    fn memory_read_u8(&self, addr: u16) -> u8 {
+    pub fn memory_read_u8(&self, addr: u16) -> u8 {
         return self.memory[addr as usize];
     }
 
-    fn memory_write_u8(&mut self, addr: u16, data: u8) {
+    pub fn memory_write_u8(&mut self, addr: u16, data: u8) {
         self.memory[addr as usize] = data;
     }
 
@@ -563,8 +563,10 @@ impl CPU {
     }
 
     pub fn load(&mut self, program: Vec<u8>) {
-        self.memory[0x8000 .. (0x8000 + program.len())].copy_from_slice(&program[..]);
-        self.memory_write_u16(0xFFFC, 0x8000);
+        // self.memory[0x8000 .. (0x8000 + program.len())].copy_from_slice(&program[..]);
+        // self.memory_write_u16(0xFFFC, 0x8000);
+        self.memory[0x0600 .. (0x0600 + program.len())].copy_from_slice(&program[..]);
+        self.memory_write_u16(0xFFFC, 0x0600);
     }
 
     pub fn load_and_run(&mut self, program: Vec<u8>) {
