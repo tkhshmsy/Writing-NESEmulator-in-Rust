@@ -148,10 +148,11 @@ impl CPU {
 
     fn asl(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
-        let value = self.memory_read_u8(addr);
+        let mut value = self.memory_read_u8(addr);
         self.status.set(CpuFlags::CARRY, value & 0x80 == 0x80);
-        self.memory_write_u8(addr, value << 1);
-        self.update_cpuflags(self.reg_a);
+        value = value << 1;
+        self.memory_write_u8(addr, value);
+        self.update_cpuflags(value);
     }
 
     fn bcc(&mut self) {
@@ -330,12 +331,24 @@ impl CPU {
         self.update_cpuflags(self.reg_y);
     }
 
-    fn lsr(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn lsr_accumulator(&mut self) {
+        let value = self.reg_a;
+        self.status.set(CpuFlags::CARRY, value & 0x01 == 0x01);
+        self.reg_a = value >> 1;
+        self.update_cpuflags(self.reg_a);
     }
 
-    fn nop(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn lsr(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let mut value = self.memory_read_u8(addr);
+        self.status.set(CpuFlags::CARRY, value & 0x01 == 0x01);
+        value = value >> 1;
+        self.memory_write_u8(addr, value);
+        self.update_cpuflags(value);
+    }
+
+    fn nop(&mut self) {
+        return;
     }
 
     fn ora(&mut self, mode: &AddressingMode) {
@@ -612,6 +625,18 @@ impl CPU {
                     // LDY
                     self.ldy(&opcode.mode);
                 },
+                0x4a => {
+                    // LSR Accumulator
+                    self.lsr_accumulator();
+                }
+                0x46 | 0x56 | 0x4e | 0x5e => {
+                    // LSR
+                    self.lsr(&opcode.mode);
+                },
+                0xea => {
+                    // NOP
+                    self.nop();
+                },
 
 
 
@@ -679,20 +704,20 @@ mod test {
     #[test]
     fn test_0x0a_asl_accumulator() {
         let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0b1010_0101, 0x0a, 0x00]);
-        assert_eq!(cpu.reg_a, 0b0100_1010);
+        cpu.load_and_run(vec![0xa9, 0b1110_0101, 0x0a, 0x00]);
+        assert_eq!(cpu.reg_a, 0b1100_1010);
         assert!(!cpu.status.contains(CpuFlags::ZERO));
-        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(cpu.status.contains(CpuFlags::CARRY));
     }
 
     #[test]
     fn test_0x06_asl_zeropage() {
         let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0b1110_0101, 0x85, 0x03, 0x06, 0x03, 0x00]);
-        assert_eq!(cpu.memory_read_u8(0x03), 0b1100_1010);
+        cpu.load_and_run(vec![0xa9, 0b1010_0101, 0x85, 0x03, 0x06, 0x03, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x03), 0b0100_1010);
         assert!(!cpu.status.contains(CpuFlags::ZERO));
-        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(cpu.status.contains(CpuFlags::CARRY));
     }
 
@@ -938,6 +963,36 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
     }
 
+    #[test]
+    fn test_0x4a_lsr_accumulator() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0b1110_0101, 0x4a, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0111_0010);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x46_lsr_zeropage() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0b1010_0101, 0x85, 0x03, 0x46, 0x03, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x03), 0b0101_0010);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0xea_nop() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xea, 0xa9, 0x55, 0x00]);
+        assert_eq!(cpu.reg_a, 0x55);
+    }
+
+
+
+
 
 
     #[test]
@@ -969,7 +1024,6 @@ mod test {
         cpu.load_and_run(vec![0xa9, 0x0a, 0xa8, 0x00]);
         assert_eq!(cpu.reg_y, 10);
     }
-
 
     #[test]
     fn test_0xe8_5_ops_working_together() {
