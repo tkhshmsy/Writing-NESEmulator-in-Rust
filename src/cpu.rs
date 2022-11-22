@@ -129,10 +129,11 @@ impl CPU {
     fn adc(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.memory_read_u8(addr);
-        let result = self.reg_a.overflowing_add(value);
-        self.status.set(CpuFlags::CARRY, result.1);
-        self.status.set(CpuFlags::OVERFLOW, (result.0 ^ value) & (result.0 ^ self.reg_a) & 0x80 != 0x00);
-        self.reg_a = result.0;
+        let sum = self.reg_a as u16 + value as u16 + if self.status.contains(CpuFlags::CARRY) { 1 as u16 } else { 0 as u16};
+        self.status.set(CpuFlags::CARRY, sum > 0xff);
+        let result = (sum & 0x00ff) as u8;
+        self.status.set(CpuFlags::OVERFLOW, (result ^ value) & (result ^ self.reg_a) & 0x80 != 0x00 );
+        self.reg_a = result;
         self.update_cpuflags(self.reg_a);
     }
 
@@ -440,7 +441,15 @@ impl CPU {
     }
 
     fn sbc(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        let subing =  value as u16 + (if self.status.contains(CpuFlags::CARRY) { 1 } else { 0 }) as u16;
+        let sub = (self.reg_a as u16).overflowing_sub(subing);
+        self.status.set(CpuFlags::CARRY, sub.1);
+        let result = (sub.0 & 0x00ff) as u8;
+        self.status.set(CpuFlags::OVERFLOW, ((!(result ^ value)) & (result ^ self.reg_a)) & 0x80 != 0x00 );
+        self.reg_a = result;
+        self.update_cpuflags(self.reg_a);
     }
 
     fn sec(&mut self, mode: &AddressingMode) {
@@ -756,7 +765,10 @@ impl CPU {
                     // RTS
                     self.rts();
                 },
-
+                0xe9 | 0xe5 | 0xf5 | 0xed | 0xfd | 0xf9 | 0xe1 | 0xf1 => {
+                    // SBC
+                    self.sbc(&opcode.mode);
+                },
 
 
 
@@ -787,30 +799,58 @@ mod test {
     use super::*;
 
     #[test]
-    fn test_0x69_adc_immidiate_for_no_carry() {
+    fn test_0x69_adc_immidiate_for_not_c() {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x55, 0x69, 0x10, 0x00]);
+        // 0x55 + 0x10 = 0x65, no CARRY, no OVERFLOW
         assert_eq!(cpu.reg_a, 0x65);
         assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
     }
 
     #[test]
-    fn test_0x69_adc_immidiate_for_carry() {
+    fn test_0x69_adc_immidiate_for_c() {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x55, 0x69, 0xcc, 0x00]);
+        // 0x55 + 0xcc = 33+256, with CARRY, no OVERFLOW
         assert_eq!(cpu.reg_a, 33);
         assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
     }
 
     #[test]
-    fn test_0x69_adc_immidiate_for_overflow() {
+    fn test_0x69_adc_immidiate_for_v() {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x40, 0x69, 0x40, 0x00]);
+        // 64 + 64 = 128(=-128), with OVERFLOW
         assert_eq!(cpu.reg_a, 0x80);
         assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0x69_adc_immidiate_with_carry_for_cz() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0xfe, 0x69, 0x01, 0x00]);
+        // 0xfe + 0x01 + CARRY = 0x00 + 256 with CARRY, no OVERFLOW
+        assert_eq!(cpu.reg_a, 0x00);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0x69_adc_immidiate_with_carried_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0x80, 0x69, 0xff, 0x00]);
+        // 0x80 + 0xff + CARRY = 0x80 + 256 with CARRY, no OVERFLOW
+        assert_eq!(cpu.reg_a, 0x80);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
     }
 
     #[test]
@@ -1193,6 +1233,50 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0xe9_sbc_immidiate_for_not_cz() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x10, 0xe9, 0x01, 0x00]);
+        // 16 - 1 = 15, no CARRY
+        assert_eq!(cpu.reg_a, 0x0f);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0xe9_sbc_immidiate_for_v_not_cz() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x80, 0xe9, 0x7f, 0x00]);
+        // 0x80 - 0x7f = 0x01 but OVERFLOW, no CARRY
+        assert_eq!(cpu.reg_a, 0x01);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0xe9_sbc_immidiate_with_carry_for_zv_not_c() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0x80, 0xe9, 0x7f, 0x00]);
+        // 0x80 - 0x7f - CARRY = 0x00 but OVERFLOW, no CARRY
+        assert_eq!(cpu.reg_a, 0x00);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0xe9_sbc_immidiate_with_carried_overflow() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0x40, 0xe9, 0xff, 0x00]);
+        // 0x40 - 0xff - CARRY = 0x40 with CARRY, no OVERFLOW
+        assert_eq!(cpu.reg_a, 0x40);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
     }
 
 
