@@ -470,11 +470,13 @@ impl CPU {
     }
 
     fn stx(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        self.memory_write_u8(addr, self.reg_x);
     }
 
     fn sty(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        self.memory_write_u8(addr, self.reg_y);
     }
 
     fn tax(&mut self) {
@@ -785,11 +787,14 @@ impl CPU {
                     // STA
                     self.sta(&opcode.mode);
                 },
-
-
-
-
-
+                0x86 | 0x96 | 0x8e => {
+                    // STX
+                    self.stx(&opcode.mode);
+                },
+                0x84 | 0x94 | 0x8c => {
+                    //STY
+                    self.sty(&opcode.mode);
+                },
                 0xaa => {
                     // TAX
                     self.tax();
@@ -798,6 +803,11 @@ impl CPU {
                     // TAY
                     self.tay();
                 },
+
+
+
+
+
                 _ => todo!()
             }
             if pc_state == self.reg_pc {
@@ -1328,6 +1338,23 @@ mod test {
         let data = cpu.memory_read_u8(0x58);
         assert_eq!(data, 0xaa);
     }
+
+    #[test]
+    fn test_0x86_stx_to_zeropage() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa2, 0x55, 0x86, 0x03, 0x00]);
+        let data = cpu.memory_read_u8(0x03);
+        assert_eq!(data, 0x55);
+    }
+
+    #[test]
+    fn test_0x84_sty_to_zeropage() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa0, 0x55, 0x84, 0x03, 0x00]);
+        let data = cpu.memory_read_u8(0x03);
+        assert_eq!(data, 0x55);
+    }
+
 
     #[test]
     fn test_0xaa_tax_move_a_to_x() {
