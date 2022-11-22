@@ -52,7 +52,7 @@ impl CPU {
             reg_x: 0,
             reg_y: 0,
             reg_sp: STACK_RESET,
-            status: CpuFlags::empty(),
+            status: CpuFlags::INTERRUPT_DISABLE | CpuFlags::BREAK2,
             reg_pc: 0,
             memory: [0; 0xFFFF],
         }
@@ -558,7 +558,7 @@ impl CPU {
         self.reg_x = 0;
         self.reg_y = 0;
         self.reg_sp = STACK_RESET;
-        self.status = CpuFlags::empty();
+        self.status = CpuFlags::INTERRUPT_DISABLE | CpuFlags::BREAK2;
         self.reg_pc = self.memory_read_u16(0xFFFC);
     }
 
