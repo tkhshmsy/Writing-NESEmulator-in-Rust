@@ -228,7 +228,7 @@ lazy_static! {
         OpCode::new(0x40, "RTI", 1, 6, AddressingMode::NonAddressing),
 
         // RTS - Return from Subroutine
-        OpCode::new(0x60, "RTI", 1, 6, AddressingMode::NonAddressing),
+        OpCode::new(0x60, "RTS", 1, 6, AddressingMode::NonAddressing),
 
         // SBC - Subtract with Carry
         OpCode::new(0xE9, "SBC", 2, 2, AddressingMode::Immediate),

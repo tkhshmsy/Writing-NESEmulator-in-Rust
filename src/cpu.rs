@@ -311,7 +311,9 @@ impl CPU {
     }
 
     fn jsr(&mut self) {
-        // TODO
+        self.stack_push_u16(self.reg_pc + 2 - 1);
+        let addr = self.get_operand_address(&AddressingMode::Immediate);
+        self.reg_pc = self.memory_read_u16(addr);
     }
 
     fn lda(&mut self, mode: &AddressingMode) {
@@ -433,8 +435,8 @@ impl CPU {
         // TODO
     }
 
-    fn rts(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn rts(&mut self) {
+        self.reg_pc = self.stack_pop_u16() + 1;
     }
 
     fn sbc(&mut self, mode: &AddressingMode) {
@@ -681,11 +683,10 @@ impl CPU {
                     // JMP indirect
                     self.jmp_indirect();
                 },
-                // TODO
-                // 0x20 => {
-                //     // JSR
-                //     self.jsr();
-                // },
+                0x20 => {
+                    // JSR
+                    self.jsr();
+                },
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
                     // LDA
                     self.lda(&opcode.mode);
@@ -745,6 +746,15 @@ impl CPU {
                 0x66 | 0x76 | 0x6e | 0x7e => {
                     // ROR
                     self.ror(&opcode.mode);
+                },
+                // 0x40 => {
+                //     // TODO
+                //     // RTI
+                //     self.rti();
+                // },
+                0x60 => {
+                    // RTS
+                    self.rts();
                 },
 
 
@@ -1028,9 +1038,16 @@ mod test {
     // fn test_0x6c_jmp_indirect() {
     // }
 
-    // #[test]
-    // fn test_0x20_jsr() {
-    // }
+    #[test]
+    fn test_0x20_0x60_jsr_rts() {
+        let mut cpu = CPU::new();
+        cpu.memory_write_u8(0x0010, 0xa9);
+        cpu.memory_write_u8(0x0011, 0x02);
+        cpu.memory_write_u8(0x0012, 0x60);
+        cpu.load_and_run(vec![0xa9, 0x01, 0x20, 0x10, 0x00, 0xa2, 0x03, 0x00]);
+        assert_eq!(cpu.reg_a, 0x02);
+        assert_eq!(cpu.reg_x, 0x03);
+    }
 
     #[test]
     fn test_0xa9_lda_immidiate() {
