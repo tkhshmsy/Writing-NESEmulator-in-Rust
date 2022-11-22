@@ -452,16 +452,16 @@ impl CPU {
         self.update_cpuflags(self.reg_a);
     }
 
-    fn sec(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn sec(&mut self) {
+        self.status.set(CpuFlags::CARRY, true);
     }
 
-    fn sed(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn sed(&mut self) {
+        self.status.set(CpuFlags::DECIMAL_MODE, true);
     }
 
-    fn sei(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn sei(&mut self) {
+        self.status.set(CpuFlags::INTERRUPT_DISABLE, true);
     }
 
     fn sta(&mut self, mode: &AddressingMode) {
@@ -769,14 +769,27 @@ impl CPU {
                     // SBC
                     self.sbc(&opcode.mode);
                 },
-
-
-
-
+                0x38 => {
+                    // SEC
+                    self.sec();
+                },
+                0xf8 => {
+                    // SED
+                    self.sed();
+                },
+                0x78 => {
+                    // SEI
+                    self.sei();
+                },
                 0x85 | 0x95 | 0x8d | 0x9d | 0x99 | 0x81 | 0x91 => {
                     // STA
                     self.sta(&opcode.mode);
                 },
+
+
+
+
+
                 0xaa => {
                     // TAX
                     self.tax();
@@ -1279,9 +1292,26 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
     }
 
+    #[test]
+    fn test_0x38_sec() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0x38, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
 
+    #[test]
+    fn test_0xf8_sed() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xf8, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::DECIMAL_MODE));
+    }
 
-
+    #[test]
+    fn test_0x78_sed() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0x78, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::INTERRUPT_DISABLE));
+    }
 
     #[test]
     fn test_0x85_sta_to_zeropage() {
