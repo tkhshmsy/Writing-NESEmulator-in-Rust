@@ -208,7 +208,7 @@ lazy_static! {
         OpCode::new(0x68, "PLA", 1, 4, AddressingMode::NonAddressing),
 
         // PLP - Pull Processor Status
-        OpCode::new(0x28, "PHP", 1, 4, AddressingMode::NonAddressing),
+        OpCode::new(0x28, "PLP", 1, 4, AddressingMode::NonAddressing),
 
         // ROL - Rotate Left
         OpCode::new(0x2A, "ROL", 1, 2, AddressingMode::NonAddressing),

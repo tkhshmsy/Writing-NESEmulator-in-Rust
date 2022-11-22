@@ -31,6 +31,10 @@ pub enum AddressingMode {
     NonAddressing,
 }
 
+// memory map
+const STACK_BASE: u16 = 0x0100;
+const STACK_RESET: u8 = 0xfd;
+
 pub struct CPU {
     pub reg_a: u8,
     pub reg_x: u8,
@@ -47,7 +51,7 @@ impl CPU {
             reg_a: 0,
             reg_x: 0,
             reg_y: 0,
-            reg_sp: 0,
+            reg_sp: STACK_RESET,
             status: CpuFlags::empty(),
             reg_pc: 0,
             memory: [0; 0xFFFF],
@@ -358,20 +362,23 @@ impl CPU {
         self.update_cpuflags(self.reg_a);
     }
 
-    fn pha(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn pha(&mut self) {
+        self.stack_push_u8(self.reg_a);
     }
 
-    fn php(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn php(&mut self) {
+        let flags = self.status.bits();
+        self.stack_push_u8(flags);
     }
 
-    fn pla(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn pla(&mut self) {
+        self.reg_a = self.stack_pop_u8();
+        self.update_cpuflags(self.reg_a);
     }
 
-    fn plp(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn plp(&mut self) {
+        let flags = self.stack_pop_u8();
+        self.status.bits = flags;
     }
 
     fn rol(&mut self, mode: &AddressingMode) {
@@ -461,11 +468,34 @@ impl CPU {
         self.update_cpuflags(lhs.wrapping_sub(rhs));
     }
 
+    fn stack_push_u8(&mut self, data: u8) {
+        self.memory_write_u8((STACK_BASE as u16) + (self.reg_sp as u16), data);
+        self.reg_sp = self.reg_sp.wrapping_sub(1);
+    }
+
+    fn stack_push_u16(&mut self, data: u16) {
+        let lo = (data & 0x00ff) as u8;
+        let hi = (data >> 8) as u8;
+        self.stack_push_u8(hi);
+        self.stack_push_u8(lo);
+    }
+
+    fn stack_pop_u8(&mut self) -> u8 {
+        self.reg_sp = self.reg_sp.wrapping_add(1);
+        return self.memory_read_u8((STACK_BASE as u16) + (self.reg_sp as u16));
+    }
+
+    fn stack_pop_u16(&mut self) -> u16 {
+        let lo = self.stack_pop_u8() as u16;
+        let hi = self.stack_pop_u8() as u16;
+        return hi << 8 | lo;
+    }
+
     pub fn reset(&mut self) {
         self.reg_a = 0;
         self.reg_x = 0;
         self.reg_y = 0;
-        self.reg_sp = 0;
+        self.reg_sp = STACK_RESET;
         self.status = CpuFlags::empty();
         self.reg_pc = self.memory_read_u16(0xFFFC);
     }
@@ -644,6 +674,23 @@ impl CPU {
                     // ORA
                     self.ora(&opcode.mode);
                 },
+                0x48 => {
+                    // PHA
+                    self.pha();
+                },
+                0x08 => {
+                    // PHP
+                    self.php();
+                },
+                0x68 => {
+                    // PLA
+                    self.pla();
+                },
+                0x28 => {
+                    // PHP
+                    self.plp();
+                },
+
 
 
 
@@ -1005,6 +1052,25 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(cpu.status.contains(CpuFlags::NEGATIVE));
     }
+
+    #[test]
+    fn test_0x48_0x68_pha_pla() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x80, 0x48, 0xa9, 0x00, 0x68, 0x00]);
+        assert_eq!(cpu.reg_a, 0x80);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0x08_0x28_php_plp() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x80, 0x08, 0xa9, 0x00, 0x28, 0x00]);
+        assert_eq!(cpu.reg_a, 0x00);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
 
 
 
