@@ -370,8 +370,10 @@ impl CPU {
     }
 
     fn php(&mut self) {
-        let flags = self.status.bits();
-        self.stack_push_u8(flags);
+        let mut flags = self.status.clone();
+        flags.set(CpuFlags::BREAK1, true);
+        flags.set(CpuFlags::BREAK2, true);
+        self.stack_push_u8(flags.bits());
     }
 
     fn pla(&mut self) {
@@ -380,8 +382,9 @@ impl CPU {
     }
 
     fn plp(&mut self) {
-        let flags = self.stack_pop_u8();
-        self.status.bits = flags;
+        self.status.bits = self.stack_pop_u8();
+        self.status.set(CpuFlags::BREAK1, false);
+        self.status.set(CpuFlags::BREAK2, true);
     }
 
     fn rol_accumulator(&mut self) {
@@ -432,8 +435,11 @@ impl CPU {
         self.update_cpuflags(value);
     }
 
-    fn rti(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn rti(&mut self) {
+        self.status.bits = self.stack_pop_u8();
+        self.status.set(CpuFlags::BREAK1, false);
+        self.status.set(CpuFlags::BREAK2, true);
+        self.reg_pc = self.stack_pop_u16();
     }
 
     fn rts(&mut self) {
@@ -761,11 +767,10 @@ impl CPU {
                     // ROR
                     self.ror(&opcode.mode);
                 },
-                // 0x40 => {
-                //     // TODO
-                //     // RTI
-                //     self.rti();
-                // },
+                0x40 => {
+                    // RTI
+                    self.rti();
+                },
                 0x60 => {
                     // RTS
                     self.rts();
