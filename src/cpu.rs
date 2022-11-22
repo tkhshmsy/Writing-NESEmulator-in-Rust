@@ -489,20 +489,23 @@ impl CPU {
         self.update_cpuflags(self.reg_y);
     }
 
-    fn tsx(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn tsx(&mut self) {
+        self.reg_x = self.reg_sp;
+        self.update_cpuflags(self.reg_x);
     }
 
-    fn txa(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn txa(&mut self) {
+        self.reg_a = self.reg_x;
+        self.update_cpuflags(self.reg_a);
     }
 
-    fn txs(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn txs(&mut self) {
+        self.reg_sp = self.reg_x;
     }
 
-    fn tya(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn tya(&mut self) {
+        self.reg_a = self.reg_y;
+        self.update_cpuflags(self.reg_a);
     }
 
     fn update_cpuflags(&mut self, data: u8) {
@@ -803,11 +806,22 @@ impl CPU {
                     // TAY
                     self.tay();
                 },
-
-
-
-
-
+                0xba => {
+                    // TSX
+                    self.tsx();
+                },
+                0x8a => {
+                    // TXA
+                    self.txa();
+                },
+                0x9a => {
+                    // TXS
+                    self.txs();
+                },
+                0x98 => {
+                    // TYA
+                    self.tya();
+                },
                 _ => todo!()
             }
             if pc_state == self.reg_pc {
@@ -1355,7 +1369,6 @@ mod test {
         assert_eq!(data, 0x55);
     }
 
-
     #[test]
     fn test_0xaa_tax_move_a_to_x() {
         let mut cpu = CPU::new();
@@ -1368,6 +1381,34 @@ mod test {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x0a, 0xa8, 0x00]);
         assert_eq!(cpu.reg_y, 10);
+    }
+
+    #[test]
+    fn test_0xba_tsx() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0x48, 0xba, 0x00]);
+        assert_eq!(cpu.reg_sp, cpu.reg_x);
+    }
+
+    #[test]
+    fn test_0x8a_txa() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa2, 0x55, 0x8a, 0x00]);
+        assert_eq!(cpu.reg_x, cpu.reg_a);
+    }
+
+    #[test]
+    fn test_0x9a_txs() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0x48, 0xba, 0xe8, 0x9a, 0x00]);
+        assert_eq!(cpu.reg_x, cpu.reg_sp);
+    }
+
+    #[test]
+    fn test_0x98_tya() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa0, 0x55, 0x98, 0x00]);
+        assert_eq!(cpu.reg_y, cpu.reg_a);
     }
 
     #[test]
