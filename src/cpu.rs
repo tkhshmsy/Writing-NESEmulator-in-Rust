@@ -942,13 +942,23 @@ mod test {
         assert!(cpu.status.contains(CpuFlags::NEGATIVE));
     }
 
-    // #[test]
-    // fn test_0x0e_cpx() {
-    // }
+    #[test]
+    fn test_0xe0_cpx_immidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa2, 0x88, 0xe0, 0x04, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
 
-    // #[test]
-    // fn test_0xc0_cpy() {
-    // }
+    #[test]
+    fn test_0xc0_cpy_immidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa0, 0x04, 0xc0, 0x88, 0x00]);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
 
     #[test]
     fn test_0xc6_dec_zeropage_for_not_nz() {

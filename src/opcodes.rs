@@ -123,7 +123,7 @@ lazy_static! {
         OpCode::new(0xCA, "DEX", 1, 2, AddressingMode::NonAddressing),
 
         // DEY - Decrement Y Register
-        OpCode::new(0x88, "DEX", 1, 2, AddressingMode::NonAddressing),
+        OpCode::new(0x88, "DEY", 1, 2, AddressingMode::NonAddressing),
 
         // EOR - Exclusive OR
         OpCode::new(0x49, "EOR", 2, 2, AddressingMode::Immediate),
@@ -244,7 +244,7 @@ lazy_static! {
         OpCode::new(0x38, "SEC", 1, 2, AddressingMode::NonAddressing),
 
         // SED - Set Decimal Flag
-        OpCode::new(0xF8, "SEC", 1, 2, AddressingMode::NonAddressing),
+        OpCode::new(0xF8, "SED", 1, 2, AddressingMode::NonAddressing),
 
         // SEI - Set Interrupt Disable
         OpCode::new(0x78, "SEI", 1, 2, AddressingMode::NonAddressing),
