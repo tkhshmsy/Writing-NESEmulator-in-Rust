@@ -317,11 +317,17 @@ impl CPU {
     }
 
     fn ldx(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        self.reg_x = value;
+        self.update_cpuflags(self.reg_x);
     }
 
     fn ldy(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr = self.get_operand_address(mode);
+        let value = self.memory_read_u8(addr);
+        self.reg_y = value;
+        self.update_cpuflags(self.reg_y);
     }
 
     fn lsr(&mut self, mode: &AddressingMode) {
@@ -594,12 +600,21 @@ impl CPU {
                 //     // JSR
                 //     self.jsr();
                 // },
-
-
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
                     // LDA
                     self.lda(&opcode.mode);
                 },
+                0xa2 | 0xa6 | 0xb6 | 0xae | 0xbe => {
+                    // LDX
+                    self.ldx(&opcode.mode);
+                },
+                0xa0 | 0xa4 | 0xb4 | 0xac | 0xbc => {
+                    // LDY
+                    self.ldy(&opcode.mode);
+                },
+
+
+
                 0x85 | 0x95 | 0x8d | 0x9d | 0x99 | 0x81 | 0x91 => {
                     // STA
                     self.sta(&opcode.mode);
@@ -624,53 +639,6 @@ impl CPU {
 #[cfg(test)]
 mod test {
     use super::*;
-
-    #[test]
-    fn test_0xa9_lda_immidiate() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x05, 0x00]);
-        assert_eq!(cpu.reg_a, 0x05);
-        assert!(cpu.status.contains(CpuFlags::ZERO) == false);
-        assert!(cpu.status.contains(CpuFlags::NEGATIVE) == false);
-    }
-
-    #[test]
-    fn test_0xa9_lda_immidiate_for_z() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
-        assert!(cpu.status.contains(CpuFlags::ZERO) == true);
-    }
-
-    #[test]
-    fn test_0xe8_5_ops_working_together() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
-        assert_eq!(cpu.reg_x, 0xc1);
-    }
-
-    #[test]
-    fn test_0xa5_lda_from_memory() {
-        let mut cpu = CPU::new();
-        cpu.memory_write_u8(0x10, 0x55);
-        cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
-        assert_eq!(cpu.reg_a, 0x55);
-    }
-
-    #[test]
-    fn test_0x85_sta_to_zeropage() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x55, 0x85, 0x03, 0x00]);
-        let data = cpu.memory_read_u8(0x03);
-        assert_eq!(data, 0x55);
-    }
-
-    #[test]
-    fn test_0x95_sta_to_zeropage_x() {
-        let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0x55, 0xaa, 0xa9, 0xaa, 0x95, 0x03, 0x00]);
-        let data = cpu.memory_read_u8(0x58);
-        assert_eq!(data, 0xaa);
-    }
 
     #[test]
     fn test_0x69_adc_immidiate_for_no_carry() {
@@ -924,8 +892,69 @@ mod test {
     // fn test_0x6c_jmp_indirect() {
     // }
 
+    // #[test]
+    // fn test_0x20_jsr() {
+    // }
+
+    #[test]
+    fn test_0xa9_lda_immidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x05, 0x00]);
+        assert_eq!(cpu.reg_a, 0x05);
+        assert!(cpu.status.contains(CpuFlags::ZERO) == false);
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE) == false);
+    }
+
+    #[test]
+    fn test_0xa9_lda_immidiate_for_z() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
+        assert!(cpu.status.contains(CpuFlags::ZERO) == true);
+    }
+
+    #[test]
+    fn test_0xa5_lda_zeropage() {
+        let mut cpu = CPU::new();
+        cpu.memory_write_u8(0x10, 0x55);
+        cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
+        assert_eq!(cpu.reg_a, 0x55);
+    }
+
+    #[test]
+    fn test_0xa2_ldx_immidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa2, 0xa5, 0x00]);
+        assert_eq!(cpu.reg_x, 0xa5);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xa0_ldy_immidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa0, 0x5a, 0x00]);
+        assert_eq!(cpu.reg_y, 0x5a);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
 
 
+
+    #[test]
+    fn test_0x85_sta_to_zeropage() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x55, 0x85, 0x03, 0x00]);
+        let data = cpu.memory_read_u8(0x03);
+        assert_eq!(data, 0x55);
+    }
+
+    #[test]
+    fn test_0x95_sta_to_zeropage_x() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0x55, 0xaa, 0xa9, 0xaa, 0x95, 0x03, 0x00]);
+        let data = cpu.memory_read_u8(0x58);
+        assert_eq!(data, 0xaa);
+    }
 
     #[test]
     fn test_0xaa_tax_move_a_to_x() {
@@ -942,5 +971,11 @@ mod test {
     }
 
 
+    #[test]
+    fn test_0xe8_5_ops_working_together() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
+        assert_eq!(cpu.reg_x, 0xc1);
+    }
 }
 
