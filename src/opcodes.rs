@@ -148,11 +148,11 @@ lazy_static! {
         OpCode::new(0xC8, "INY", 1, 2, AddressingMode::NonAddressing),
 
         // JMP - Jump
-        OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::NonAddressing),
+        OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::Absolute),
         OpCode::new(0x6C, "JMP", 3, 3, AddressingMode::NonAddressing),
 
         // JSR - Jump to Sub Routine
-        OpCode::new(0x20, "JSR", 3, 6, AddressingMode::NonAddressing),
+        OpCode::new(0x20, "JSR", 3, 6, AddressingMode::Absolute),
 
         // LDA - Load Accumulator
         OpCode::new(0xA9, "LDA", 2, 2, AddressingMode::Immediate),

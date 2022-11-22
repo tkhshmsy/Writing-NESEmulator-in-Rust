@@ -287,11 +287,25 @@ impl CPU {
         self.update_cpuflags(self.reg_y);
     }
 
-    fn jmp(&mut self, mode: &AddressingMode) {
-        // TODO
+    fn jmp(&mut self) {
+        let addr =  self.memory_read_u16(self.reg_pc);
+        self.reg_pc = addr;
     }
 
-    fn jsr(&mut self, mode: &AddressingMode) {
+    fn jmp_indirect(&mut self) {
+        let addr =  self.memory_read_u16(self.reg_pc);
+        let indirect = if addr & 0x00ff == 0x00ff {
+            // reproduction 6502 bug
+            let lo = self.memory_read_u8(addr);
+            let hi = self.memory_read_u8(addr & 0xff00);
+            (hi as u16) << 8  | (lo as u16)
+        } else {
+            self.memory_read_u16(addr)
+        };
+        self.reg_pc = indirect;
+    }
+
+    fn jsr(&mut self) {
         // TODO
     }
 
@@ -567,6 +581,19 @@ impl CPU {
                     // INY
                     self.iny();
                 },
+                0x4c => {
+                    // JMP
+                    self.jmp();
+                },
+                0x6c => {
+                    // JMP indirect
+                    self.jmp_indirect();
+                },
+                // TODO
+                // 0x20 => {
+                //     // JSR
+                //     self.jsr();
+                // },
 
 
                 0xa9 | 0xa5 | 0xb5 | 0xad | 0xbd | 0xb9 | 0xa1 | 0xb1 => {
@@ -883,7 +910,19 @@ mod test {
         assert!(cpu.status.contains(CpuFlags::NEGATIVE));
     }
 
+    #[test]
+    fn test_0x4c_jmp_absolute() {
+        let mut cpu = CPU::new();
+        cpu.memory_write_u8(0x0000, 0xa9);
+        cpu.memory_write_u8(0x0001, 0xaa);
+        cpu.memory_write_u8(0x0002, 0x00);
+        cpu.load_and_run(vec![0xa9, 0x55, 0x4c, 0x00, 0x00, 0x00]);
+        assert_eq!(cpu.reg_a, 0xaa);
+    }
 
+    // #[test]
+    // fn test_0x6c_jmp_indirect() {
+    // }
 
 
 
