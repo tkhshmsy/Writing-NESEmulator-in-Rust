@@ -574,9 +574,18 @@ impl CPU {
     }
 
     pub fn run(&mut self) {
+        self.run_with_callback(|_| {});
+    }
+
+    pub fn run_with_callback<F>(&mut self, mut callback: F)
+    where
+        F: FnMut(&mut CPU),
+    {
         let ref opcodes: HashMap<u8, &'static opcodes::OpCode> = *opcodes::OPCODE_MAP;
 
         loop {
+            callback(self);
+
             let code = self.memory_read_u8(self.reg_pc);
             self.reg_pc += 1;
             let pc_state = self.reg_pc;
