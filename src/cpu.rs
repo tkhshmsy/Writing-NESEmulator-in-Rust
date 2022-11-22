@@ -352,7 +352,10 @@ impl CPU {
     }
 
     fn ora(&mut self, mode: &AddressingMode) {
-        // TODO
+        let addr =  self.get_operand_address(mode);
+        let value =  self.memory_read_u8(addr);
+        self.reg_a = self.reg_a | value;
+        self.update_cpuflags(self.reg_a);
     }
 
     fn pha(&mut self, mode: &AddressingMode) {
@@ -636,6 +639,10 @@ impl CPU {
                 0xea => {
                     // NOP
                     self.nop();
+                },
+                0x09 | 0x05 | 0x15 | 0x0d | 0x1d | 0x19 | 0x01 | 0x11 => {
+                    // ORA
+                    self.ora(&opcode.mode);
                 },
 
 
@@ -990,7 +997,14 @@ mod test {
         assert_eq!(cpu.reg_a, 0x55);
     }
 
-
+    #[test]
+    fn test_0x09_ora_immmidiate() {
+        let mut cpu = CPU::new();
+        cpu.load_and_run(vec![0xa9, 0b0101_1010, 0x09, 0b1001_0100, 0x00]);
+        assert_eq!(cpu.reg_a, 0b1101_1110);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+    }
 
 
 
