@@ -129,12 +129,7 @@ impl CPU {
     fn adc(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
         let value = self.memory_read_u8(addr);
-        let sum = self.reg_a as u16 + value as u16 + if self.status.contains(CpuFlags::CARRY) { 1 as u16 } else { 0 as u16};
-        self.status.set(CpuFlags::CARRY, sum > 0xff);
-        let result = (sum & 0x00ff) as u8;
-        self.status.set(CpuFlags::OVERFLOW, (result ^ value) & (result ^ self.reg_a) & 0x80 != 0x00 );
-        self.reg_a = result;
-        self.update_cpuflags(self.reg_a);
+        self.add_accumulator(value);
     }
 
     fn and(&mut self, mode: &AddressingMode) {
@@ -448,14 +443,10 @@ impl CPU {
 
     fn sbc(&mut self, mode: &AddressingMode) {
         let addr = self.get_operand_address(mode);
-        let value = self.memory_read_u8(addr);
-        let subing =  value as u16 + (if self.status.contains(CpuFlags::CARRY) { 1 } else { 0 }) as u16;
-        let sub = (self.reg_a as u16).overflowing_sub(subing);
-        self.status.set(CpuFlags::CARRY, sub.1);
-        let result = (sub.0 & 0x00ff) as u8;
-        self.status.set(CpuFlags::OVERFLOW, ((!(result ^ value)) & (result ^ self.reg_a)) & 0x80 != 0x00 );
-        self.reg_a = result;
-        self.update_cpuflags(self.reg_a);
+        let value0 = self.memory_read_u8(addr);
+        // Complement representation and subtract 1
+        let value = (value0 as i8).wrapping_neg().wrapping_sub(1);
+        self.add_accumulator(value as u8);
     }
 
     fn sec(&mut self) {
@@ -517,6 +508,15 @@ impl CPU {
     fn update_cpuflags(&mut self, data: u8) {
         self.status.set(CpuFlags::ZERO, data == 0);
         self.status.set(CpuFlags::NEGATIVE, data & 0b1000_0000 != 0);
+    }
+
+    fn add_accumulator(&mut self, value: u8) {
+        let sum = self.reg_a as u16 + value as u16 + if self.status.contains(CpuFlags::CARRY) { 1 as u16 } else { 0 as u16};
+        self.status.set(CpuFlags::CARRY, sum > 0xff);
+        let result = (sum & 0x00ff) as u8;
+        self.status.set(CpuFlags::OVERFLOW, (result ^ value) & (result ^ self.reg_a) & 0x80 != 0x00 );
+        self.reg_a = result;
+        self.update_cpuflags(self.reg_a);
     }
 
     fn branch(&mut self) {
@@ -1292,9 +1292,9 @@ mod test {
     fn test_0xe9_sbc_immidiate_for_not_cz() {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x10, 0xe9, 0x01, 0x00]);
-        // 16 - 1 = 15, no CARRY
-        assert_eq!(cpu.reg_a, 0x0f);
-        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        // 16 - 1 - 1 = 14, no CARRY
+        assert_eq!(cpu.reg_a, 0x0e);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
     }
@@ -1303,31 +1303,31 @@ mod test {
     fn test_0xe9_sbc_immidiate_for_v_not_cz() {
         let mut cpu = CPU::new();
         cpu.load_and_run(vec![0xa9, 0x80, 0xe9, 0x7f, 0x00]);
-        // 0x80 - 0x7f = 0x01 but OVERFLOW, no CARRY
-        assert_eq!(cpu.reg_a, 0x01);
-        assert!(!cpu.status.contains(CpuFlags::CARRY));
-        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        // 0x80 - 0x7f - 1 = 0x00
+        assert_eq!(cpu.reg_a, 0x00);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::ZERO));
         assert!(cpu.status.contains(CpuFlags::OVERFLOW))
     }
 
     #[test]
     fn test_0xe9_sbc_immidiate_with_carry_for_zv_not_c() {
         let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0x80, 0xe9, 0x7f, 0x00]);
-        // 0x80 - 0x7f - CARRY = 0x00 but OVERFLOW, no CARRY
-        assert_eq!(cpu.reg_a, 0x00);
-        assert!(!cpu.status.contains(CpuFlags::CARRY));
-        assert!(cpu.status.contains(CpuFlags::ZERO));
+        cpu.load_and_run(vec![0xa9, 0x80, 0x38, 0xe9, 0x7f, 0x00]);
+        // 0x80 - 0x7f = 0x01 with OVERFLOW, no CARRY
+        assert_eq!(cpu.reg_a, 0x01);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(cpu.status.contains(CpuFlags::OVERFLOW))
     }
 
     #[test]
     fn test_0xe9_sbc_immidiate_with_carried_overflow() {
         let mut cpu = CPU::new();
-        cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0x40, 0xe9, 0xff, 0x00]);
-        // 0x40 - 0xff - CARRY = 0x40 with CARRY, no OVERFLOW
-        assert_eq!(cpu.reg_a, 0x40);
-        assert!(cpu.status.contains(CpuFlags::CARRY));
+        cpu.load_and_run(vec![0xa9, 0x40, 0x38, 0xe9, 0xff, 0x00]);
+        // 0x40 - 0xff = 0x41 with CARRY, no OVERFLOW
+        assert_eq!(cpu.reg_a, 0x41);
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
     }
