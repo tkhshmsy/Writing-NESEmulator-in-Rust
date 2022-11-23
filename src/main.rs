@@ -1,5 +1,7 @@
+pub mod bus;
 pub mod cpu;
 pub mod opcodes;
+use bus::Memory;
 
 #[macro_use]
 extern crate lazy_static;
@@ -103,7 +105,8 @@ fn main() {
         0xea, 0xca, 0xd0, 0xfb, 0x60
     ];
 
-    let mut cpu = cpu::CPU::new();
+    let bus = bus::Bus::new();
+    let mut cpu = cpu::CPU::new(bus);
     cpu.load(game_code);
     cpu.reset();
 
