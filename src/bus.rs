@@ -1,3 +1,5 @@
+use crate::rom::*;
+
 // memory map
 //
 // 0x0000 - 0x1FFF: RAM
@@ -18,12 +20,12 @@ const RAM: u16 = 0x0000;
 const RAM_END: u16 = 0x1FFF;
 const PPU: u16 = 0x2000;
 const PPU_END: u16 = 0x3FFF;
-const START_VECTOR: u16 = 0xFFFC;
-const START_VECTOR_END: u16 = 0xFFFF;
+const ROM: u16 = 0x8000;
+const ROM_END: u16 = 0xFFFF;
 
 pub struct Bus {
     cpu_vram: [u8; 2048],
-    start_vector: [u8; 2],
+    rom: Rom,
 }
 
 pub trait Memory {
@@ -43,13 +45,23 @@ pub trait Memory {
 }
 
 impl Bus {
+    pub fn new_with_rom(rom: Rom) -> Self {
+        Bus {
+            cpu_vram: [0; 2048],
+            rom: rom,
+        }
+    }
+
     pub fn new() -> Self {
         Bus {
             cpu_vram: [0; 2048],
-            start_vector: [0; 2],
+            rom: Rom::new_null_rom().unwrap(),
         }
     }
-}
+
+    fn read_prg_rom_u8(&self, addr: u16) -> u8 {
+        return self.rom.prg_rom[addr as usize];
+    }}
 
 impl Memory for Bus {
     fn memory_read_u8(&self, addr: u16) -> u8 {
@@ -60,14 +72,17 @@ impl Memory for Bus {
             },
             PPU ..= PPU_END => {
                 // let fixed_addr = addr & 0x2007;
-                todo!("PPU is not support yet.");
+                todo!("PPU is not supported yet.");
             },
-            START_VECTOR ..= START_VECTOR_END => {
-                let fixed_addr = addr - START_VECTOR;
-                return self.start_vector[fixed_addr as usize];
-            }
+            ROM ..= ROM_END => {
+                let mut fixed_addr = addr - 0x8000;
+                if self.rom.prg_rom.len() == 0x4000 {
+                    fixed_addr = fixed_addr & 0x3FFF;
+                }
+                return self.read_prg_rom_u8(fixed_addr);
+            },
             _ => {
-                println!("invalid accress at {}",addr);
+                println!("invalid access at {}",addr);
                 return 0;
             }
         }
@@ -81,14 +96,13 @@ impl Memory for Bus {
             },
             PPU ..= PPU_END => {
                 // let fixed_addr = addr & 0x2007;
-                todo!("PPU is not support yet.");
+                todo!("PPU is not supported yet.");
             },
-            START_VECTOR ..= START_VECTOR_END => {
-                let fixed_addr = addr - START_VECTOR;
-                self.start_vector[fixed_addr as usize] = data;
-            }
+            ROM ..= ROM_END => {
+                println!("invalid write to ROM at {}",addr);
+            },
             _ => {
-                println!("invalid accress at {}",addr);
+                println!("invalid access at {}",addr);
             }
         }
     }
