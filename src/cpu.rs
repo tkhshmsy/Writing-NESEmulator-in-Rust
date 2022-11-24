@@ -70,50 +70,57 @@ impl CPU {
         }
     }
 
-    fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
+    pub fn get_absolute_address(&self, mode: &AddressingMode, addr: u16) -> u16 {
         match mode {
-            AddressingMode::Immediate => self.reg_pc,
-            AddressingMode::ZeroPage => self.bus.memory_read_u8(self.reg_pc) as u16,
-            AddressingMode::Absolute => self.bus.memory_read_u16(self.reg_pc),
+            AddressingMode::Immediate => addr,
+            AddressingMode::ZeroPage => self.bus.memory_read_u8(addr) as u16,
+            AddressingMode::Absolute => self.bus.memory_read_u16(addr),
 
             AddressingMode::ZeroPage_X => {
-                let pos = self.bus.memory_read_u8(self.reg_pc);
+                let pos = self.bus.memory_read_u8(addr);
                 let addr = pos.wrapping_add(self.reg_x) as u16;
                 return addr;
             },
             AddressingMode::ZeroPage_Y  => {
-                let pos = self.bus.memory_read_u8(self.reg_pc);
+                let pos = self.bus.memory_read_u8(addr);
                 let addr = pos.wrapping_add(self.reg_y) as u16;
                 return addr;
             },
             AddressingMode::Absolute_X => {
-                let base = self.bus.memory_read_u16(self.reg_pc);
+                let base = self.bus.memory_read_u16(addr);
                 let addr = base.wrapping_add(self.reg_x as u16);
                 return addr;
             },
             AddressingMode::Absolute_Y => {
-                let base = self.bus.memory_read_u16(self.reg_pc);
+                let base = self.bus.memory_read_u16(addr);
                 let addr = base.wrapping_add(self.reg_y as u16);
                 return addr;
             },
             AddressingMode::Indirect_X => {
-                let base = self.bus.memory_read_u8(self.reg_pc);
+                let base = self.bus.memory_read_u8(addr);
                 let ptr = (base as u8).wrapping_add(self.reg_x);
                 let lo = self.bus.memory_read_u8(ptr as u16);
                 let hi = self.bus.memory_read_u8(ptr.wrapping_add(1) as u16);
                 return (hi as u16) << 8 | (lo as u16)
             },
             AddressingMode::Indirect_Y => {
-                let base = self.bus.memory_read_u8(self.reg_pc);
+                let base = self.bus.memory_read_u8(addr);
                 let lo = self.bus.memory_read_u8(base as u16);
                 let hi = self.bus.memory_read_u8((base as u16).wrapping_add(1) as u16);
                 let deref_base = (hi as u16) << 8 | (lo as u16);
                 let deref = deref_base.wrapping_add(self.reg_y as u16);
                 return deref;
             },
-            AddressingMode::NonAddressing => {
+            _ => {
                 panic!("mode {:?} is not supported", mode);
             }
+        }
+    }
+
+    fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
+        match mode {
+            AddressingMode::Immediate => self.reg_pc,
+            _ => self.get_absolute_address(mode, self.reg_pc),
         }
     }
 
