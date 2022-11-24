@@ -89,3 +89,89 @@ impl Rom {
         });
     }
 }
+
+#[cfg(test)]
+pub mod test {
+    use super::*;
+
+    struct TestRom {
+        header: Vec<u8>,
+        trainer: Option<Vec<u8>>,
+        prg_rom: Vec<u8>,
+        chr_rom: Vec<u8>,
+    }
+
+    fn create_test_rom(rom: TestRom) -> Vec<u8> {
+        let mut result = Vec::with_capacity(
+            rom.header.len() + rom.trainer.as_ref().map_or(0, |t| t.len())
+                            + rom.prg_rom.len()
+                            + rom.chr_rom.len(),
+        );
+        result.extend(&rom.header);
+        if let Some(t) = rom.trainer {
+            result.extend(t);
+        }
+        result.extend(&rom.prg_rom);
+        result.extend(&rom.chr_rom);
+
+        return result;
+    }
+
+    pub fn test_rom() -> Rom {
+        let test_rom = create_test_rom(TestRom{
+            header: vec![ 0x4e, 0x45, 0x53, 0x1a, 0x02, 0x01, 0x31, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            trainer: None,
+            prg_rom: vec![1; 2 * PRG_ROM_PAGE_SIZE],
+            chr_rom: vec![2; 1 * CHR_ROM_PAGE_SIZE],
+        });
+        return Rom::new(&test_rom).unwrap();
+    }
+
+    #[test]
+    fn test() {
+        let test_rom = create_test_rom(TestRom{
+            header: vec![ 0x4e, 0x45, 0x53, 0x1a, 0x02, 0x01, 0x31, 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            trainer: None,
+            prg_rom: vec![1; 2 * PRG_ROM_PAGE_SIZE],
+            chr_rom: vec![2; 1 * CHR_ROM_PAGE_SIZE],
+        });
+        let rom = Rom::new(&test_rom).unwrap();
+
+        assert_eq!(rom.prg_rom, vec![1; 2 * PRG_ROM_PAGE_SIZE]);
+        assert_eq!(rom.chr_rom, vec![2; 1 * CHR_ROM_PAGE_SIZE]);
+        assert_eq!(rom.mapper, 3);
+        assert_eq!(rom.screen_mirroring, Mirroring::VERTICAL);
+    }
+
+    #[test]
+    fn test_trainer() {
+        let test_rom = create_test_rom(TestRom{
+            header: vec![ 0x4e, 0x45, 0x53, 0x1a, 0x02, 0x01, (0x31 | 0x04), 0, 0, 0, 0, 0, 0, 0, 0, 0,],
+            trainer: Some(vec![0; 512]),
+            prg_rom: vec![1; 2 * PRG_ROM_PAGE_SIZE],
+            chr_rom: vec![2; 1 * CHR_ROM_PAGE_SIZE],
+        });
+        let rom = Rom::new(&test_rom).unwrap();
+
+        assert_eq!(rom.prg_rom, vec![1; 2 * PRG_ROM_PAGE_SIZE]);
+        assert_eq!(rom.chr_rom, vec![2; 1 * CHR_ROM_PAGE_SIZE]);
+        assert_eq!(rom.mapper, 3);
+        assert_eq!(rom.screen_mirroring, Mirroring::VERTICAL);
+    }
+
+    #[test]
+    fn test_unsupported_ines20() {
+        let test_rom = create_test_rom(TestRom{
+            header: vec![ 0x4e, 0x45, 0x53, 0x1a, 0x01, 0x01, 0x31, 8, 0, 0, 0, 0, 0, 0, 0, 0,],
+            trainer: None,
+            prg_rom: vec![1; 2 * PRG_ROM_PAGE_SIZE],
+            chr_rom: vec![2; 1 * CHR_ROM_PAGE_SIZE],
+        });
+        let rom = Rom::new(&test_rom);
+        match rom {
+            Result::Ok(_) => assert!(false, "unexpected support ines2.0"),
+            Result::Err(str) => assert_eq!(str, "not iNES 1.0"),
+        }
+    }
+
+}
