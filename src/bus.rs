@@ -58,10 +58,7 @@ impl Bus {
             rom: Rom::new_null_rom().unwrap(),
         }
     }
-
-    fn read_prg_rom_u8(&self, addr: u16) -> u8 {
-        return self.rom.prg_rom[addr as usize];
-    }}
+}
 
 impl Memory for Bus {
     fn memory_read_u8(&self, addr: u16) -> u8 {
@@ -79,7 +76,7 @@ impl Memory for Bus {
                 if self.rom.prg_rom.len() == 0x4000 {
                     fixed_addr = fixed_addr & 0x3FFF;
                 }
-                return self.read_prg_rom_u8(fixed_addr);
+                return self.rom.prg_rom[fixed_addr as usize];
             },
             _ => {
                 println!("invalid access at {}",addr);

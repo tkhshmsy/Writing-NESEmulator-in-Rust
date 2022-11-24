@@ -10,7 +10,6 @@ extern crate lazy_static;
 use std::env;
 use std::fs::{File, metadata};
 use std::io::Read;
-use std::process::ExitCode;
 use rand::Rng;
 use sdl2::event::Event;
 use sdl2::EventPump;

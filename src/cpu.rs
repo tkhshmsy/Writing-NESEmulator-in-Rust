@@ -553,17 +553,20 @@ impl CPU {
         self.reg_pc = self.bus.memory_read_u16(0xFFFC);
     }
 
-    pub fn load(&mut self, program: Vec<u8>) {
-        // for test code -> 0x0600
+    #[allow(dead_code)]
+    fn load(&mut self, program: Vec<u8>) {
+        // only for test code -> 0x0600
         for i in 0..(program.len() as u16) {
             self.bus.memory_write_u8(0x0600 + i, program[i as usize]);
         }
-        self.bus.memory_write_u16(0xFFFC, 0x0600);
     }
 
-    pub fn load_and_run(&mut self, program: Vec<u8>) {
+    #[allow(dead_code)]
+    fn load_and_run(&mut self, program: Vec<u8>) {
+        // only for test
         self.load(program);
         self.reset();
+        self.reg_pc = 0x0600;
         self.run();
     }
 
