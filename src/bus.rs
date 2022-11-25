@@ -69,7 +69,8 @@ impl Memory for Bus {
             },
             PPU ..= PPU_END => {
                 // let fixed_addr = addr & 0x2007;
-                todo!("PPU is not supported yet.");
+                // todo!("PPU is not supported yet.");
+                0
             },
             ROM ..= ROM_END => {
                 let mut fixed_addr = addr - 0x8000;
@@ -93,7 +94,7 @@ impl Memory for Bus {
             },
             PPU ..= PPU_END => {
                 // let fixed_addr = addr & 0x2007;
-                todo!("PPU is not supported yet.");
+                // todo!("PPU is not supported yet.");
             },
             ROM ..= ROM_END => {
                 println!("invalid write to ROM at {}",addr);
