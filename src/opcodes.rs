@@ -148,11 +148,11 @@ lazy_static! {
         OpCode::new(0xC8, "INY", 1, 2, AddressingMode::NonAddressing),
 
         // JMP - Jump
-        OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::Absolute),
+        OpCode::new(0x4C, "JMP", 3, 3, AddressingMode::NonAddressing),
         OpCode::new(0x6C, "JMP", 3, 3, AddressingMode::NonAddressing),
 
         // JSR - Jump to Sub Routine
-        OpCode::new(0x20, "JSR", 3, 6, AddressingMode::Absolute),
+        OpCode::new(0x20, "JSR", 3, 6, AddressingMode::NonAddressing),
 
         // LDA - Load Accumulator
         OpCode::new(0xA9, "LDA", 2, 2, AddressingMode::Immediate),
@@ -252,9 +252,9 @@ lazy_static! {
         // STA - Store Accumulator
         OpCode::new(0x85, "STA", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x95, "STA", 2, 4, AddressingMode::ZeroPage_X),
-        OpCode::new(0x8d, "STA", 2, 4, AddressingMode::Absolute),
-        OpCode::new(0x9d, "STA", 2, 5, AddressingMode::Absolute_X),
-        OpCode::new(0x99, "STA", 2, 5, AddressingMode::Absolute_Y),
+        OpCode::new(0x8d, "STA", 3, 4, AddressingMode::Absolute),
+        OpCode::new(0x9d, "STA", 3, 5, AddressingMode::Absolute_X),
+        OpCode::new(0x99, "STA", 3, 5, AddressingMode::Absolute_Y),
         OpCode::new(0x81, "STA", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0x91, "STA", 2, 6, AddressingMode::Indirect_Y),
 

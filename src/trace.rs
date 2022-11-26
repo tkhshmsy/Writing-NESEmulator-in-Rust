@@ -35,6 +35,10 @@ pub fn trace(cpu: &CPU) -> String {
                 AddressingMode::ZeroPage_Y => format!("${:02x},Y @ {:02x} = {:02x}", addr, operand_addr, value),
                 AddressingMode::Indirect_X => format!("(${:02x},X) @ {:02x} = {:04x} = {:02x}", addr, addr.wrapping_add(cpu.reg_x), operand_addr, value),
                 AddressingMode::Indirect_Y => format!("(${:02x}),Y = {:04x} @ {:04x} = {:02x}", addr, operand_addr.wrapping_sub(cpu.reg_y as u16), operand_addr, value),
+                AddressingMode::NonAddressing => {
+                    let tmp = (begin as usize + 2).wrapping_add((addr as i8) as usize);
+                    format!("${:04x}", tmp)
+                },
                 _ => panic!("invalid addressing mode {:?} with length 2, code {:02x}", ops.mode, ops.code),
             }
         },
@@ -44,7 +48,7 @@ pub fn trace(cpu: &CPU) -> String {
             dump.push(((addr & 0xFF00) >> 8) as u8);
             match ops.mode {
                 AddressingMode::NonAddressing => {
-                    if ops.code == 0x06{
+                    if ops.code == 0x6c {
                         let jmp_addr = if addr & 0x00FF == 0x00FF {
                             let lo = cpu.memory_read_u8(addr);
                             let hi = cpu.memory_read_u8(addr & 0xFF00);
@@ -58,8 +62,8 @@ pub fn trace(cpu: &CPU) -> String {
                     }
                 },
                 AddressingMode::Absolute => format!("${:04x} = {:02x}", operand_addr, value),
-                AddressingMode::Absolute_X => format!("${:04x},X  @ {:04x} = {:02x}", addr, operand_addr, value),
-                AddressingMode::Absolute_Y => format!("${:04x},Y  @ {:04x} = {:02x}", addr, operand_addr, value),
+                AddressingMode::Absolute_X => format!("${:04x},X @ {:04x} = {:02x}", addr, operand_addr, value),
+                AddressingMode::Absolute_Y => format!("${:04x},Y @ {:04x} = {:02x}", addr, operand_addr, value),
                 _ => panic!("invalid addressing mode {:?} with length 3, code {:02x}", ops.mode, ops.code),
             }
         },
