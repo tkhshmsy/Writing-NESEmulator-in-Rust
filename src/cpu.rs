@@ -540,6 +540,13 @@ impl CPU {
     }
 
     fn isb_unofficial(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let mut data = self.bus.memory_read_u8(addr);
+        data = data.wrapping_add(1);
+        self.update_cpuflags(data);
+        self.memory_write_u8(addr, data);
+        let value = (data as i8).wrapping_neg().wrapping_sub(1);
+        self.add_accumulator(value as u8);
     }
 
     fn rla_unofficial(&mut self, mode: &AddressingMode) {
@@ -1668,6 +1675,19 @@ mod test {
         cpu.memory_write_u8(0x10, 0x55);
         cpu.load_and_run(vec![0xa9, 0x54, 0xc7, 0x10, 0x00]);
         assert_eq!(cpu.memory_read_u8(0x10), 0x54);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+    }
+
+    #[test]
+    fn test_0xe7_isb_zeropage() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.memory_write_u8(0x10, 0x55);
+        cpu.load_and_run(vec![0xa9, 0x57, 0xe7, 0x10, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x10), 0x56);
+        assert_eq!(cpu.reg_a, 0x00);
         assert!(cpu.status.contains(CpuFlags::CARRY));
         assert!(cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
