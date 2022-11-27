@@ -516,11 +516,8 @@ impl CPU {
     }
 
     fn lax_unofficial(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        let value = self.bus.memory_read_u8(addr);
-        self.reg_a = value;
-        self.update_cpuflags(self.reg_a);
-        self.reg_x = self.reg_a;
+        self.lda(mode);
+        self.tax();
     }
 
     fn sax_unofficial(&mut self, mode: &AddressingMode) {
@@ -540,13 +537,8 @@ impl CPU {
     }
 
     fn isb_unofficial(&mut self, mode: &AddressingMode) {
-        let addr = self.get_operand_address(mode);
-        let mut data = self.bus.memory_read_u8(addr);
-        data = data.wrapping_add(1);
-        self.update_cpuflags(data);
-        self.memory_write_u8(addr, data);
-        let value = (data as i8).wrapping_neg().wrapping_sub(1);
-        self.add_accumulator(value as u8);
+        self.inc(mode);
+        self.sbc(mode);
     }
 
     fn rla_unofficial(&mut self, mode: &AddressingMode) {
