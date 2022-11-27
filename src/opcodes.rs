@@ -350,7 +350,7 @@ lazy_static! {
         OpCode::new(0x63, "*RRA", 2, 8, AddressingMode::Indirect_X),
         OpCode::new(0x73, "*RRA", 2, 8, AddressingMode::Indirect_Y),
 
-        // SLO
+        // SLO - Shift Left in memory and OR Accumulator
         OpCode::new(0x07, "*SLO", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0x17, "*SLO", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x0F, "*SLO", 3, 6, AddressingMode::Absolute),
