@@ -531,6 +531,12 @@ impl CPU {
     }
 
     fn dcp_unofficial(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let mut data = self.bus.memory_read_u8(addr);
+        data = data.wrapping_sub(1);
+        self.bus.memory_write_u8(addr, data);
+        self.status.set(CpuFlags::CARRY, data <= self.reg_a);
+        self.update_cpuflags(self.reg_a.wrapping_sub(data));
     }
 
     fn isb_unofficial(&mut self, mode: &AddressingMode) {
@@ -549,6 +555,7 @@ impl CPU {
     }
 
     fn sbc_unofficial(&mut self, mode: &AddressingMode) {
+        self.sbc(mode);
     }
 
     fn nop_unofficial(&mut self) {
@@ -1640,6 +1647,30 @@ mod test {
         assert_eq!(cpu.bus.memory_read_u8(0x10), 0x05);
         assert_eq!(cpu.reg_a, 0x55);
         assert_eq!(cpu.reg_x, 0xa5);
+    }
+
+    #[test]
+    fn test_0xeb_sbc_immidiate_for_not_cz() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0x10, 0xeb, 0x01, 0x00]);
+        // 16 - 1 - 1 = 14, no CARRY
+        assert_eq!(cpu.reg_a, 0x0e);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW))
+    }
+
+    #[test]
+    fn test_0xc7_dcp_zeropage() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.memory_write_u8(0x10, 0x55);
+        cpu.load_and_run(vec![0xa9, 0x54, 0xc7, 0x10, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x10), 0x54);
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
     }
 }
 

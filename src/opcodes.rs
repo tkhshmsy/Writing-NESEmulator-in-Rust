@@ -314,14 +314,14 @@ lazy_static! {
         OpCode::new(0x8F, "*SAX", 3, 4, AddressingMode::Absolute),
         OpCode::new(0x83, "*SAX", 2, 6, AddressingMode::Indirect_X),
 
-        // DCP
+        // DCP - Decrement Memory without borrow
         OpCode::new(0xC7, "*DCP", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0xD7, "*DCP", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0xCF, "*DCP", 3, 6, AddressingMode::Absolute),
         OpCode::new(0xDF, "*DCP", 3, 7, AddressingMode::Absolute_X),
         OpCode::new(0xDB, "*DCP", 3, 7, AddressingMode::Absolute_Y),
-        OpCode::new(0xD3, "*DCP", 2, 8, AddressingMode::Indirect_X),
-        OpCode::new(0xC3, "*DCP", 2, 8, AddressingMode::Indirect_Y),
+        OpCode::new(0xC3, "*DCP", 2, 8, AddressingMode::Indirect_X),
+        OpCode::new(0xD3, "*DCP", 2, 8, AddressingMode::Indirect_Y),
 
         // ISB
         OpCode::new(0xE7, "*ISB", 2, 5, AddressingMode::ZeroPage),
@@ -338,8 +338,8 @@ lazy_static! {
         OpCode::new(0x2F, "*RLA", 3, 6, AddressingMode::Absolute),
         OpCode::new(0x3F, "*RLA", 3, 7, AddressingMode::Absolute_X),
         OpCode::new(0x3B, "*RLA", 3, 7, AddressingMode::Absolute_Y),
-        OpCode::new(0x33, "*RLA", 2, 8, AddressingMode::Indirect_X),
-        OpCode::new(0x23, "*RLA", 2, 8, AddressingMode::Indirect_Y),
+        OpCode::new(0x23, "*RLA", 2, 8, AddressingMode::Indirect_X),
+        OpCode::new(0x33, "*RLA", 2, 8, AddressingMode::Indirect_Y),
 
         // RRA
         OpCode::new(0x67, "*RRA", 2, 5, AddressingMode::ZeroPage),
@@ -368,7 +368,7 @@ lazy_static! {
         OpCode::new(0x43, "*SRE", 2, 8, AddressingMode::Indirect_X),
         OpCode::new(0x53, "*SRE", 2, 8, AddressingMode::Indirect_Y),
 
-        // SBC
+        // SBC - Subtract with Carry
         OpCode::new(0xEB, "*SBC", 2, 2, AddressingMode::Immediate),
 
         // NOP
