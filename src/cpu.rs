@@ -516,6 +516,11 @@ impl CPU {
     }
 
     fn lax_unofficial(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let value = self.bus.memory_read_u8(addr);
+        self.reg_a = value;
+        self.update_cpuflags(self.reg_a);
+        self.reg_x = self.reg_a;
     }
 
     fn sax_unofficial(&mut self, mode: &AddressingMode) {
@@ -542,7 +547,14 @@ impl CPU {
     fn sbc_unofficial(&mut self, mode: &AddressingMode) {
     }
 
-    fn nop_unofficial(&mut self, mode: &AddressingMode) {
+    fn nop_unofficial(&mut self) {
+        return;
+    }
+
+    fn nop_with_read_unofficial(&mut self) {
+        // let addr = self.get_operand_address(mode);
+        // let data = self.bus.memory_read_u8(addr);
+        return;
     }
 
     fn update_cpuflags(&mut self, data: u8) {
@@ -935,13 +947,19 @@ impl CPU {
                     // SBC
                     self.sbc_unofficial(&opcode.mode);
                 },
-                0x80 | 0x82 | 0x89 | 0xc2 | 0xe2 | 0x04 | 0x44 | 0x64
-                | 0x14 | 0x34 | 0x54 | 0x74 | 0xd4 | 0xf4
-                | 0x0c | 0x1c | 0x3c | 0x5c | 0x7c | 0xdc | 0xfc
+                0x80 | 0x82 | 0x89 | 0xc2 | 0xe2 => {
+                    // NOP immediate
+                    self.nop_unofficial();
+                },
+                0x04 | 0x44 | 0x64 | 0x14 | 0x34 | 0x54 | 0x74 | 0xd4 | 0xf4
+                | 0x0c | 0x1c | 0x3c | 0x5c | 0x7c | 0xdc | 0xfc => {
+                    // NOP with read
+                    self.nop_with_read_unofficial();
+                },
                 | 0x02 | 0x12 | 0x22 | 0x32 | 0x42 | 0x52 | 0x62 | 0x72
                 | 0x92 | 0xb2 | 0xd2 | 0xf2 | 0x1a | 0x3a | 0x5a | 0x7a | 0xda | 0xfa => {
-                    // NOP
-                    self.nop_unofficial(&opcode.mode);
+                    // NOP others
+                    self.nop_unofficial();
                 },
                 _ => todo!()
             }
@@ -1598,5 +1616,17 @@ mod test {
         cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
         assert_eq!(cpu.reg_x, 0xc1);
     }
+
+    // ========== unofficial opcodes ==========
+    #[test]
+    fn test_0xa7_lax_zeropage() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.memory_write_u8(0x10, 0x55);
+        cpu.load_and_run(vec![0xa7, 0x10, 0x00]);
+        assert_eq!(cpu.reg_a, 0x55);
+        assert_eq!(cpu.reg_x, 0x55);
+    }
+
 }
 

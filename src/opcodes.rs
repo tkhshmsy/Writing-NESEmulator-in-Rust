@@ -300,7 +300,7 @@ lazy_static! {
         // AXS
         OpCode::new(0xCB, "*AXS", 2, 2, AddressingMode::Immediate),
 
-        // LAX
+        // LAX - Load Accumulator and X Register
         OpCode::new(0xA7, "*LAX", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0xB7, "*LAX", 2, 4, AddressingMode::ZeroPage_Y),
         OpCode::new(0xAF, "*LAX", 3, 4, AddressingMode::Absolute),
@@ -377,6 +377,7 @@ lazy_static! {
         OpCode::new(0x89, "*NOP", 2, 2, AddressingMode::Immediate),
         OpCode::new(0xC2, "*NOP", 2, 2, AddressingMode::Immediate),
         OpCode::new(0xE2, "*NOP", 2, 2, AddressingMode::Immediate),
+
         OpCode::new(0x04, "*NOP", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x44, "*NOP", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x64, "*NOP", 2, 3, AddressingMode::ZeroPage),
@@ -393,6 +394,7 @@ lazy_static! {
         OpCode::new(0x7C, "*NOP", 3, 4, AddressingMode::Absolute_X), // +1
         OpCode::new(0xDC, "*NOP", 3, 4, AddressingMode::Absolute_X), // +1
         OpCode::new(0xFC, "*NOP", 3, 4, AddressingMode::Absolute_X), // +1
+
         OpCode::new(0x02, "*NOP", 1, 2, AddressingMode::NonAddressing),
         OpCode::new(0x12, "*NOP", 1, 2, AddressingMode::NonAddressing),
         OpCode::new(0x22, "*NOP", 1, 2, AddressingMode::NonAddressing),
