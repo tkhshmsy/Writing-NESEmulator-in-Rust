@@ -503,6 +503,48 @@ impl CPU {
         self.update_cpuflags(self.reg_a);
     }
 
+    fn alr_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn anc_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn arr_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn axs_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn lax_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn sax_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn dcp_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn isb_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn rla_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn rra_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn slo_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn sre_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn sbc_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
+    fn nop_unofficial(&mut self, mode: &AddressingMode) {
+    }
+
     fn update_cpuflags(&mut self, data: u8) {
         self.status.set(CpuFlags::ZERO, data == 0);
         self.status.set(CpuFlags::NEGATIVE, data & 0b1000_0000 != 0);
@@ -839,6 +881,67 @@ impl CPU {
                 0x98 => {
                     // TYA
                     self.tya();
+                },
+                // ========== unofficial opcodes ==========
+                0x4b => {
+                    // ALR
+                    self.alr_unofficial(&opcode.mode);
+                },
+                0x0b | 0x2b => {
+                    // ANC
+                    self.anc_unofficial(&opcode.mode);
+                },
+                0x6b => {
+                    // ARR
+                    self.arr_unofficial(&opcode.mode);
+                },
+                0xcb => {
+                    // AXS
+                    self.axs_unofficial(&opcode.mode);
+                },
+                0xa7 | 0xb7 | 0xaf | 0xbf | 0xa3 | 0xb3 => {
+                    // LAX
+                    self.lax_unofficial(&opcode.mode);
+                },
+                0x87 | 0x97 | 0x8f | 0x83 => {
+                    // SAX
+                    self.sax_unofficial(&opcode.mode);
+                },
+                0xc7 | 0xd7 | 0xcf | 0xdf | 0xdb | 0xd3 | 0xc3 => {
+                    // DCP
+                    self.dcp_unofficial(&opcode.mode);
+                },
+                0xe7 | 0xf7 | 0xef | 0xff | 0xfb | 0xe3 | 0xf3 => {
+                    // ISB
+                    self.isb_unofficial(&opcode.mode);
+                },
+                0x27 | 0x37 | 0x2f | 0x3f | 0x3b | 0x33 | 0x23 => {
+                    // RLA
+                    self.rla_unofficial(&opcode.mode);
+                },
+                0x67 | 0x77 | 0x6f | 0x7f | 0x7b | 0x63 | 0x73 => {
+                    // RRA
+                    self.rra_unofficial(&opcode.mode);
+                },
+                0x07 | 0x17 | 0x0f | 0x1f | 0x1b | 0x03 | 0x13 => {
+                    // SLO
+                    self.slo_unofficial(&opcode.mode);
+                },
+                0x47 | 0x57 | 0x4f | 0x5f | 0x5b | 0x43 | 0x53 => {
+                    // SRE
+                    self.sre_unofficial(&opcode.mode);
+                },
+                0xeb => {
+                    // SBC
+                    self.sbc_unofficial(&opcode.mode);
+                },
+                0x80 | 0x82 | 0x89 | 0xc2 | 0xe2 | 0x04 | 0x44 | 0x64
+                | 0x14 | 0x34 | 0x54 | 0x74 | 0xd4 | 0xf4
+                | 0x0c | 0x1c | 0x3c | 0x5c | 0x7c | 0xdc | 0xfc
+                | 0x02 | 0x12 | 0x22 | 0x32 | 0x42 | 0x52 | 0x62 | 0x72
+                | 0x92 | 0xb2 | 0xd2 | 0xf2 | 0x1a | 0x3a | 0x5a | 0x7a | 0xda | 0xfa => {
+                    // NOP
+                    self.nop_unofficial(&opcode.mode);
                 },
                 _ => todo!()
             }
