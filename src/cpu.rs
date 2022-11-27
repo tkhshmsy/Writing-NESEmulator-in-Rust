@@ -524,6 +524,10 @@ impl CPU {
     }
 
     fn sax_unofficial(&mut self, mode: &AddressingMode) {
+        let addr = self.get_operand_address(mode);
+        let data = self.reg_a & self.reg_x;
+        self.bus.memory_write_u8(addr, data);
+        // self.update_cpuflags(data);
     }
 
     fn dcp_unofficial(&mut self, mode: &AddressingMode) {
@@ -1628,5 +1632,14 @@ mod test {
         assert_eq!(cpu.reg_x, 0x55);
     }
 
+    #[test]
+    fn test_0x87_sax_zeropage() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0x55, 0xa2, 0xa5, 0x87, 0x10, 0x00]);
+        assert_eq!(cpu.bus.memory_read_u8(0x10), 0x05);
+        assert_eq!(cpu.reg_a, 0x55);
+        assert_eq!(cpu.reg_x, 0xa5);
+    }
 }
 

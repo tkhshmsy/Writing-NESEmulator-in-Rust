@@ -308,7 +308,7 @@ lazy_static! {
         OpCode::new(0xA3, "*LAX", 2, 6, AddressingMode::Indirect_X),
         OpCode::new(0xB3, "*LAX", 2, 5, AddressingMode::Indirect_Y),
 
-        // SAX
+        // SAX - And with X register into memory
         OpCode::new(0x87, "*SAX", 2, 3, AddressingMode::ZeroPage),
         OpCode::new(0x97, "*SAX", 2, 4, AddressingMode::ZeroPage_Y),
         OpCode::new(0x8F, "*SAX", 3, 4, AddressingMode::Absolute),
