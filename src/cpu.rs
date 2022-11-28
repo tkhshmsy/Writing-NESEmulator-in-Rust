@@ -555,6 +555,8 @@ impl CPU {
     }
 
     fn sre_unofficial(&mut self, mode: &AddressingMode) {
+        self.lsr(mode);
+        self.eor(mode);
     }
 
     fn sbc_unofficial(&mut self, mode: &AddressingMode) {
@@ -1713,6 +1715,19 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(!cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x47_sre_zeropage() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.memory_write_u8(0x10, 0b0010_0001);
+        cpu.load_and_run(vec![0xa9, 0b0100_1000, 0x47, 0x10, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x10), 0b0001_0000);
+        assert_eq!(cpu.reg_a, 0b0101_1000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
     }
 }
 
