@@ -1,4 +1,7 @@
+pub mod address;
+
 use crate::rom::Mirroring;
+use address::AddressRegister;
 
 const PPU_REG_CONTROLLER: u16  = 0x2000;
 const PPU_REG_MASK: u16        = 0x2001;
@@ -26,17 +29,29 @@ pub struct NesPPU {
     pub oam_data: [u8; 256],
 
     pub mirroring: Mirroring,
+    pub address: AddressRegister,
+}
+
+pub trait PPU {
+    fn write_to_address(&mut self, data: u8);
 }
 
 impl NesPPU {
     pub fn new(chr_rom: Vec<u8>, mirroring: Mirroring) -> Self {
         NesPPU {
             chr_rom: chr_rom,
-            mirroring: mirroring,
-
             palette_table: [0; 32],
             vram: [0; 2048],
             oam_data: [0; 256],
+
+            mirroring: mirroring,
+            address: AddressRegister::new(),
         }
+    }
+}
+
+impl PPU for NesPPU {
+    fn write_to_address(&mut self, data: u8) {
+        self.address.update(data);
     }
 } 
