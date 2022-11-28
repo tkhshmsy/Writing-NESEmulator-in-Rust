@@ -290,7 +290,7 @@ lazy_static! {
         // ALR - AND Accumulator and Logical Shift Right
         OpCode::new(0x4B, "*ALR", 2, 2, AddressingMode::Immediate),
 
-        // ANC
+        // ANC - AND Accumulator and if NEGATIVE set CARRY
         OpCode::new(0x0B, "*ANC", 2, 2, AddressingMode::Immediate),
         OpCode::new(0x2B, "*ANC", 2, 2, AddressingMode::Immediate),
 
