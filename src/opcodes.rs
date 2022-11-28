@@ -332,7 +332,7 @@ lazy_static! {
         OpCode::new(0xE3, "*ISB", 2, 8, AddressingMode::Indirect_X),
         OpCode::new(0xF3, "*ISB", 2, 8, AddressingMode::Indirect_Y),
 
-        // RLA
+        // RLA - Rotate Left in memory and AND Accumulator
         OpCode::new(0x27, "*RLA", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0x37, "*RLA", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x2F, "*RLA", 3, 6, AddressingMode::Absolute),

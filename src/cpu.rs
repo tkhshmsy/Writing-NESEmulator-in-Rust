@@ -542,6 +542,8 @@ impl CPU {
     }
 
     fn rla_unofficial(&mut self, mode: &AddressingMode) {
+        self.rol(mode);
+        self.and(mode);
     }
 
     fn rra_unofficial(&mut self, mode: &AddressingMode) {
@@ -1692,12 +1694,25 @@ mod test {
         let bus = Bus::new();
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0b1010_0001);
-        cpu.load_and_run(vec![0xa9, 0b0100_1000, 0x07, 0x10, 0x00]);
+        cpu.load_and_run(vec![0x38, 0xa9, 0b0100_1000, 0x07, 0x10, 0x00]);
         assert_eq!(cpu.memory_read_u8(0x10), 0b0100_0010);
         assert_eq!(cpu.reg_a, 0b0100_1010);
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x27_rla_zeropage() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.memory_write_u8(0x10, 0b0010_0001);
+        cpu.load_and_run(vec![0x38, 0xa9, 0b0100_1000, 0x27, 0x10, 0x00]);
+        assert_eq!(cpu.memory_read_u8(0x10), 0b0100_0011);
+        assert_eq!(cpu.reg_a, 0b0100_0000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
     }
 }
 
