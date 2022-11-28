@@ -297,7 +297,7 @@ lazy_static! {
         // ARR - AND Accumulator and Rotate Right, check bit 5 and 6
         OpCode::new(0x6B, "*ARR", 2, 2, AddressingMode::Immediate),
 
-        // AXS
+        // AXS - AND X Register with Accumulator and store in, subtract memory without borrow
         OpCode::new(0xCB, "*AXS", 2, 2, AddressingMode::Immediate),
 
         // LAX - Load Accumulator and X Register

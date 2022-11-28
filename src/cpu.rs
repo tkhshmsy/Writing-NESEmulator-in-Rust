@@ -523,6 +523,13 @@ impl CPU {
     }
 
     fn axs_unofficial(&mut self, mode: &AddressingMode) {
+        let x_and_a = self.reg_x & self.reg_a;
+        let addr = self.get_operand_address(mode);
+        let data = self.bus.memory_read_u8(addr);
+        let result = x_and_a.wrapping_sub(data);
+        self.reg_x = result;
+        self.status.set(CpuFlags::CARRY, x_and_a <= data);
+        self.update_cpuflags(self.reg_x);
     }
 
     fn lax_unofficial(&mut self, mode: &AddressingMode) {
@@ -1823,6 +1830,28 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(!cpu.status.contains(CpuFlags::CARRY));
         assert!(!cpu.status.contains(CpuFlags::OVERFLOW));
+    }
+
+    #[test]
+    fn test_0xcb_axs_immidiate_for_not_c() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0x3f, 0xa2, 0x1f, 0xcb, 0x04, 0x00]);
+        assert_eq!(cpu.reg_x, 0b0001_1011);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0xcb_axs_immidiate_for_c() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0x3f, 0xa2, 0x1f, 0xcb, 0x2f, 0x00]);
+        assert_eq!(cpu.reg_x, 0b1111_0000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
     }
 }
 
