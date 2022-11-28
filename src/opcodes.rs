@@ -294,7 +294,7 @@ lazy_static! {
         OpCode::new(0x0B, "*ANC", 2, 2, AddressingMode::Immediate),
         OpCode::new(0x2B, "*ANC", 2, 2, AddressingMode::Immediate),
 
-        // ARR
+        // ARR - AND Accumulator and Rotate Right, check bit 5 and 6
         OpCode::new(0x6B, "*ARR", 2, 2, AddressingMode::Immediate),
 
         // AXS

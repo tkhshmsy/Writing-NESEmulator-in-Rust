@@ -514,6 +514,12 @@ impl CPU {
     }
 
     fn arr_unofficial(&mut self, mode: &AddressingMode) {
+        self.and(mode);
+        self.ror_accumulator();
+        let bit5 = (self.reg_a & 0b0010_0000) != 0x00;
+        let bit6 = (self.reg_a & 0b0100_0000) != 0x00;
+        self.status.set(CpuFlags::CARRY, bit6);
+        self.status.set(CpuFlags::OVERFLOW, bit5 ^ bit6);
     }
 
     fn axs_unofficial(&mut self, mode: &AddressingMode) {
@@ -1769,6 +1775,54 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x6b_arr_immidiate_for_c_not_v() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0b1101_1001, 0x6b, 0b1101_0001, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0110_1000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW));
+    }
+
+    #[test]
+    fn test_0x6b_arr_immidiate_for_v_not_c() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0b0101_1001, 0x6b, 0b0101_0001, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0010_1000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::OVERFLOW));
+    }
+
+    #[test]
+    fn test_0x6b_arr_immidiate_for_cv() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0b1001_1001, 0x6b, 0b1001_0001, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0100_1000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
+        assert!(cpu.status.contains(CpuFlags::OVERFLOW));
+    }
+
+    #[test]
+    fn test_0x6b_arr_immidiate_for_not_cv() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0b0001_1001, 0x6b, 0b0001_0001, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0000_1000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(!cpu.status.contains(CpuFlags::CARRY));
+        assert!(!cpu.status.contains(CpuFlags::OVERFLOW));
     }
 }
 
