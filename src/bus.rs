@@ -80,7 +80,7 @@ impl Memory for Bus {
                 return self.rom.prg_rom[fixed_addr as usize];
             },
             _ => {
-                println!("invalid access at {}",addr);
+                println!("invalid access at {:04x}",addr);
                 return 0;
             }
         }
@@ -97,10 +97,10 @@ impl Memory for Bus {
                 // todo!("PPU is not supported yet.");
             },
             ROM ..= ROM_END => {
-                println!("invalid write to ROM at {}",addr);
+                println!("invalid write to ROM at {:04x}",addr);
             },
             _ => {
-                println!("invalid access at {}",addr);
+                println!("invalid access at {:04x}",addr);
             }
         }
     }
