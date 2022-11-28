@@ -341,7 +341,7 @@ lazy_static! {
         OpCode::new(0x23, "*RLA", 2, 8, AddressingMode::Indirect_X),
         OpCode::new(0x33, "*RLA", 2, 8, AddressingMode::Indirect_Y),
 
-        // RRA
+        // RRA - Rotate Right in memory and Add Accumulator
         OpCode::new(0x67, "*RRA", 2, 5, AddressingMode::ZeroPage),
         OpCode::new(0x77, "*RRA", 2, 6, AddressingMode::ZeroPage_X),
         OpCode::new(0x6F, "*RRA", 3, 6, AddressingMode::Absolute),
