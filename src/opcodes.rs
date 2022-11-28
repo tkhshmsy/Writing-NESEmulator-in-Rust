@@ -287,7 +287,7 @@ lazy_static! {
         OpCode::new(0x98, "TYA", 1, 2, AddressingMode::NonAddressing),
 
         // ========== unofficial opcodes ==========
-        // ALR
+        // ALR - AND Accumulator and Logical Shift Right
         OpCode::new(0x4B, "*ALR", 2, 2, AddressingMode::Immediate),
 
         // ANC

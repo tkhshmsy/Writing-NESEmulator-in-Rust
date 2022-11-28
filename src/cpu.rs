@@ -504,6 +504,8 @@ impl CPU {
     }
 
     fn alr_unofficial(&mut self, mode: &AddressingMode) {
+        self.and(mode);
+        self.lsr_accumulator();
     }
 
     fn anc_unofficial(&mut self, mode: &AddressingMode) {
@@ -1743,6 +1745,17 @@ mod test {
         assert!(!cpu.status.contains(CpuFlags::ZERO));
         assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
         assert!(!cpu.status.contains(CpuFlags::CARRY));
+    }
+
+    #[test]
+    fn test_0x4b_alr_immidiate() {
+        let bus = Bus::new();
+        let mut cpu = CPU::new(bus);
+        cpu.load_and_run(vec![0xa9, 0b0101_1001, 0x4b, 0b0101_0001, 0x00]);
+        assert_eq!(cpu.reg_a, 0b0010_1000);
+        assert!(!cpu.status.contains(CpuFlags::ZERO));
+        assert!(!cpu.status.contains(CpuFlags::NEGATIVE));
+        assert!(cpu.status.contains(CpuFlags::CARRY));
     }
 }
 
