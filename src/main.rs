@@ -3,6 +3,7 @@ pub mod cpu;
 pub mod opcodes;
 pub mod rom;
 pub mod trace;
+pub mod ppu;
 use bus::Memory;
 
 #[macro_use]
