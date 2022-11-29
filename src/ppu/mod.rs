@@ -29,6 +29,7 @@ pub struct NesPPU {
     pub palette_table: [u8; 32],
     pub vram: [u8; 2048],
     pub oam_data: [u8; 256],
+    internal_data_buffer: u8,
 
     pub mirroring: Mirroring,
     pub address: AddressRegister,
@@ -37,7 +38,9 @@ pub struct NesPPU {
 
 pub trait PPU {
     fn write_to_address(&mut self, data: u8);
+    fn read_data(&mut self) -> u8;
     fn write_to_control(&mut self, data: u8);
+    fn increment_vram_address(&mut self);
 }
 
 impl NesPPU {
@@ -47,6 +50,7 @@ impl NesPPU {
             palette_table: [0; 32],
             vram: [0; 2048],
             oam_data: [0; 256],
+            internal_data_buffer: 0x00,
 
             mirroring: mirroring,
             address: AddressRegister::new(),
@@ -60,7 +64,33 @@ impl PPU for NesPPU {
         self.address.update(data);
     }
 
+    fn read_data(&mut self) -> u8 {
+        let addr = self.address.get();
+        self.increment_vram_address();
+        match addr {
+            0x0000 ..= 0x1fff => {
+                let data = self.internal_data_buffer;
+                self.internal_data_buffer = self.chr_rom[addr as usize];
+                return data;
+            },
+            0x2000 ..= 0x2fff => {
+                todo!("TODO: PPU VRAM");
+            },
+            0x3000 ..= 0x3eff => {
+                panic!("invalid PPU VRAM address {:04x}", addr);
+            },
+            0x3f00 ..= 0x3fff => {
+                return self.palette_table[(addr - 0x3f00) as usize];
+            },
+            _ => panic!("invalid PPU address {:04x}", addr),
+        }
+    }
+
     fn write_to_control(&mut self, data: u8) {
         self.control.update(data);
+    }
+
+    fn increment_vram_address(&mut self) {
+        self.address.increment(self.control.vram_addr_increment());
     }
 } 
