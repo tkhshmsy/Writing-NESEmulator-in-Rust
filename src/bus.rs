@@ -55,7 +55,7 @@ impl Bus {
     pub fn new() -> Self {
         Bus {
             cpu_vram: [0; 2048],
-            rom: Rom::new_null_rom().unwrap(),
+            rom: Rom::new_empty_rom().unwrap(),
         }
     }
 }

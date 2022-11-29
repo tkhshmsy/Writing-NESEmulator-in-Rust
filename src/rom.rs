@@ -46,7 +46,7 @@ pub struct Rom {
 }
 
 impl Rom {
-    pub fn new_null_rom() -> Result<Rom, String> {
+    pub fn new_empty_rom() -> Result<Rom, String> {
         return Ok (Rom {
             prg_rom: vec![0; 16384],
             chr_rom: vec![0; 16384],
