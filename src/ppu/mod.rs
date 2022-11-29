@@ -1,7 +1,9 @@
 pub mod address;
+pub mod control;
 
 use crate::rom::Mirroring;
 use address::AddressRegister;
+use control::ControlRegister;
 
 const PPU_REG_CONTROLLER: u16  = 0x2000;
 const PPU_REG_MASK: u16        = 0x2001;
@@ -30,10 +32,12 @@ pub struct NesPPU {
 
     pub mirroring: Mirroring,
     pub address: AddressRegister,
+    pub control: ControlRegister,
 }
 
 pub trait PPU {
     fn write_to_address(&mut self, data: u8);
+    fn write_to_control(&mut self, data: u8);
 }
 
 impl NesPPU {
@@ -46,6 +50,7 @@ impl NesPPU {
 
             mirroring: mirroring,
             address: AddressRegister::new(),
+            control: ControlRegister::new(),
         }
     }
 }
@@ -53,5 +58,9 @@ impl NesPPU {
 impl PPU for NesPPU {
     fn write_to_address(&mut self, data: u8) {
         self.address.update(data);
+    }
+
+    fn write_to_control(&mut self, data: u8) {
+        self.control.update(data);
     }
 } 
