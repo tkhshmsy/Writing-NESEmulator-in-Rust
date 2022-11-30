@@ -19,14 +19,14 @@ bitflags! {
     //            vertical blanking interval (0: off; 1: on)
     #[repr(transparent)]
     pub struct ControlRegister: u8 {
-        const NAMETABLE1                 = 0b0000_0001;
-        const NAMETABLE2                 = 0b0000_0010;
-        const VRAM_ADD_INCREMENT         = 0b0000_0100;
-        const SPRITE_PATTERN_ADDRESS     = 0b0000_1000;
-        const BACKROUND_PATTERN_ADDRESS  = 0b0001_0000;
-        const SPRITE_SIZE                = 0b0010_0000;
-        const MASTER_SLAVE_SELECT        = 0b0100_0000;
-        const GENERATE_NMI               = 0b1000_0000;
+        const NAME_TABLE1                 = 0b0000_0001;
+        const NAME_TABLE2                 = 0b0000_0010;
+        const VRAM_ADD_INCREMENT          = 0b0000_0100;
+        const SPRITE_PATTERN_ADDRESS      = 0b0000_1000;
+        const BACKGROUND_PATTERN_ADDRESS  = 0b0001_0000;
+        const SPRITE_SIZE                 = 0b0010_0000;
+        const MASTER_SLAVE_SELECT         = 0b0100_0000;
+        const GENERATE_NMI                = 0b1000_0000;
     }
 }
 
@@ -41,6 +41,49 @@ impl ControlRegister {
         } else {
             return 32;
         }
+    }
+
+    pub fn name_table_address(&self) -> u16 {
+        let value = self.bits & 0x03;
+        match value {
+            0x00 => { return 0x2000; },
+            0x01 => { return 0x2400; },
+            0x02 => { return 0x2800; },
+            0x03 => { return 0x2c00; },
+            _ => panic!("invalid name_table bits"),
+        }
+    }
+
+    pub fn sprite_pattern_address(&self) -> u16 {
+        if self.contains(ControlRegister::SPRITE_PATTERN_ADDRESS) {
+            return 0;
+        } else {
+            return 0x1000;
+        }
+    }
+
+    pub fn background_pattern_address(&self) -> u16 {
+        if self.contains(ControlRegister::BACKGROUND_PATTERN_ADDRESS) {
+            return 0;
+        } else {
+            return 0x1000;
+        }
+    }
+
+    pub fn sprite_size(&self) -> u8 {
+        if self.contains(ControlRegister::SPRITE_SIZE) {
+            return 8;
+        } else {
+            return 16;
+        }
+    }
+
+    pub fn master_slave_select(&self) -> bool {
+        return self.contains(ControlRegister::MASTER_SLAVE_SELECT);
+    }
+
+    pub fn generate_vblank_nmi(&self) -> bool {
+        return self.contains(ControlRegister::GENERATE_NMI);
     }
 
     pub fn update(&mut self, data: u8) {
