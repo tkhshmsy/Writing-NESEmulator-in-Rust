@@ -128,7 +128,7 @@ impl Memory for Bus {
                 todo!();
             },
             PPU_REG_SCROLL => {
-                todo!();
+                self.ppu.write_scroll(data);
             },
             PPU_REG_ADDRESS => {
                 self.ppu.write_address(data);
