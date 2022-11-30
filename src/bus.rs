@@ -80,7 +80,7 @@ impl Memory for Bus {
                 panic!("read write-only PPU register {:04x}", addr);
             },
             PPU_REG_STATUS => {
-                todo!();
+                return self.ppu.read_status();
             },
             PPU_REG_OAM_DATA => {
                 todo!();
