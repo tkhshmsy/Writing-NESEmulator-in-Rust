@@ -4,7 +4,7 @@ use crate::bus::Memory;
 use crate::opcodes;
 use std::collections::HashMap;
 
-pub fn trace(cpu: &CPU) -> String {
+pub fn trace(cpu: &mut CPU) -> String {
     let ref opcodes: HashMap<u8, &'static opcodes::OpCode> = *opcodes::OPCODE_MAP;
     let code = cpu.memory_read_u8(cpu.reg_pc);
     let ops = opcodes.get(&code).unwrap();

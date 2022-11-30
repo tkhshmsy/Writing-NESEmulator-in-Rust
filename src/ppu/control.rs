@@ -35,7 +35,7 @@ impl ControlRegister {
         ControlRegister::from_bits_truncate(0b0000_0000)
     }
 
-    pub fn vram_addr_increment(&self) -> u8 {
+    pub fn vram_address_increment(&self) -> u8 {
         if !self.contains(ControlRegister::VRAM_ADD_INCREMENT) {
             return 1;
         } else {

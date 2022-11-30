@@ -1,4 +1,5 @@
 use crate::rom::*;
+use crate::ppu::*;
 
 // memory map
 //
@@ -25,13 +26,14 @@ const ROM_END: u16 = 0xFFFF;
 
 pub struct Bus {
     cpu_vram: [u8; 2048],
-    rom: Rom,
+    prg_rom: Vec<u8>,
+    ppu: NesPPU,
 }
 
 pub trait Memory {
-    fn memory_read_u8(&self, addr: u16) -> u8;
+    fn memory_read_u8(&mut self, addr: u16) -> u8;
     fn memory_write_u8(&mut self, addr: u16, data: u8);
-    fn memory_read_u16(&self, addr: u16) -> u16 {
+    fn memory_read_u16(&mut self, addr: u16) -> u16 {
         let lo = self.memory_read_u8(addr) as u16;
         let hi = self.memory_read_u8(addr + 1) as u16;
         return (hi << 8) | lo;
@@ -48,36 +50,54 @@ impl Bus {
     pub fn new_with_rom(rom: Rom) -> Self {
         Bus {
             cpu_vram: [0; 2048],
-            rom: rom,
+            prg_rom: rom.prg_rom,
+            ppu: NesPPU::new(rom.chr_rom, rom.screen_mirroring),
         }
     }
 
     pub fn new() -> Self {
         Bus {
             cpu_vram: [0; 2048],
-            rom: Rom::new_empty_rom().unwrap(),
+            prg_rom: [0; 16384].to_vec(),
+            ppu: NesPPU::new_empty_rom(),
         }
     }
 }
 
 impl Memory for Bus {
-    fn memory_read_u8(&self, addr: u16) -> u8 {
+    fn memory_read_u8(&mut self, addr: u16) -> u8 {
         match addr {
             RAM ..= RAM_END => {
                 let fixed_addr = addr & 0x07FF;
                 return self.cpu_vram[fixed_addr as usize];
             },
-            PPU ..= PPU_END => {
-                // let fixed_addr = addr & 0x2007;
-                // todo!("PPU is not supported yet.");
-                0
+            PPU_REG_CONTROLLER
+            | PPU_REG_MASK
+            | PPU_REG_OAM_ADDRESS
+            | PPU_REG_SCROLL
+            | PPU_REG_ADDRESS
+            | PPU_REG_OAM_DMA => {
+                panic!("read write-only PPU register {:04x}", addr);
             },
+            PPU_REG_STATUS => {
+                todo!();
+            },
+            PPU_REG_OAM_DATA => {
+                todo!();
+            },
+            PPU_REG_DATA => {
+                return self.ppu.read_data();
+            },
+            PPU_REG_END ..= PPU_END => {
+                let fixed_addr = addr & 0x2007;
+                return self.memory_read_u8(fixed_addr);
+            }
             ROM ..= ROM_END => {
                 let mut fixed_addr = addr - 0x8000;
-                if self.rom.prg_rom.len() == 0x4000 {
+                if self.prg_rom.len() == 0x4000 {
                     fixed_addr = fixed_addr & 0x3FFF;
                 }
-                return self.rom.prg_rom[fixed_addr as usize];
+                return self.prg_rom[fixed_addr as usize];
             },
             _ => {
                 println!("invalid access at {:04x}",addr);
@@ -92,12 +112,39 @@ impl Memory for Bus {
                 let fixed_addr = addr & 0x07FF;
                 self.cpu_vram[fixed_addr as usize] = data;
             },
-            PPU ..= PPU_END => {
-                // let fixed_addr = addr & 0x2007;
-                // todo!("PPU is not supported yet.");
+            PPU_REG_CONTROLLER => {
+                self.ppu.write_control(data);
+            },
+            PPU_REG_MASK => {
+                todo!();
+            },
+            PPU_REG_STATUS => {
+                panic!("invalid write to PPU Status register");
+            },
+            PPU_REG_OAM_ADDRESS => {
+                todo!();
+            },
+            PPU_REG_OAM_DATA => {
+                todo!();
+            },
+            PPU_REG_SCROLL => {
+                todo!();
+            },
+            PPU_REG_ADDRESS => {
+                self.ppu.write_address(data);
+            },
+            PPU_REG_DATA => {
+                self.ppu.write_data(data);
+            },
+            // PPU_REG_OAM_DMA => {
+            //     todo!();
+            // },
+            PPU_REG_END ..= PPU_END => {
+                let fixed_addr = addr & 0x2007;
+                self.memory_write_u8(fixed_addr, data);
             },
             ROM ..= ROM_END => {
-                println!("invalid write to ROM at {:04x}",addr);
+                panic!("invalid write to ROM at {:04x}",addr);
             },
             _ => {
                 println!("invalid access at {:04x}",addr);

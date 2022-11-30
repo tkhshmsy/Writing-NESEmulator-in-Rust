@@ -5,15 +5,16 @@ use crate::rom::Mirroring;
 use address::AddressRegister;
 use control::ControlRegister;
 
-const PPU_REG_CONTROLLER: u16  = 0x2000;
-const PPU_REG_MASK: u16        = 0x2001;
-const PPU_REG_STATUS: u16      = 0x2002;
-const PPU_REG_OAM_ADDRESS: u16 = 0x2003;
-const PPU_REG_OAM_DATA: u16    = 0x2004;
-const PPU_REG_SCROLL: u16      = 0x2005;
-const PPU_REG_ADDRESS: u16     = 0x2006;
-const PPU_REG_DATA: u16        = 0x2007;
-const PPU_REG_OAM_DMA: u16     = 0x4014;
+pub const PPU_REG_CONTROLLER: u16  = 0x2000;
+pub const PPU_REG_MASK: u16        = 0x2001;
+pub const PPU_REG_STATUS: u16      = 0x2002;
+pub const PPU_REG_OAM_ADDRESS: u16 = 0x2003;
+pub const PPU_REG_OAM_DATA: u16    = 0x2004;
+pub const PPU_REG_SCROLL: u16      = 0x2005;
+pub const PPU_REG_ADDRESS: u16     = 0x2006;
+pub const PPU_REG_DATA: u16        = 0x2007;
+pub const PPU_REG_END: u16         = 0x2008;
+pub const PPU_REG_OAM_DMA: u16     = 0x4014;
 
 const PPU_CHR_ROM: u16 = 0x0000;
 const PPU_CHR_ROM_END: u16 = 0x1fff;
@@ -39,10 +40,10 @@ pub struct NesPPU {
 }
 
 pub trait PPU {
-    fn write_to_address(&mut self, data: u8);
+    fn write_address(&mut self, data: u8);
     fn read_data(&mut self) -> u8;
-    fn write_to_data(&mut self, data: u8);
-    fn write_to_control(&mut self, data: u8);
+    fn write_data(&mut self, data: u8);
+    fn write_control(&mut self, data: u8);
 }
 
 impl NesPPU {
@@ -65,7 +66,7 @@ impl NesPPU {
     }
 
     fn increment_vram_address(&mut self) {
-        self.address.increment(self.control.vram_addr_increment());
+        self.address.increment(self.control.vram_address_increment());
     }
 
     fn mirror_vram_address(&mut self, addr: u16) -> u16 {
@@ -87,7 +88,7 @@ impl NesPPU {
 }
 
 impl PPU for NesPPU {
-    fn write_to_address(&mut self, data: u8) {
+    fn write_address(&mut self, data: u8) {
         self.address.update(data);
     }
 
@@ -119,7 +120,7 @@ impl PPU for NesPPU {
         }
     }
 
-    fn write_to_data(&mut self, data: u8) {
+    fn write_data(&mut self, data: u8) {
         let addr = self.address.get();
         match addr {
             PPU_CHR_ROM ..= PPU_CHR_ROM_END => {
@@ -143,7 +144,7 @@ impl PPU for NesPPU {
         self.increment_vram_address();
     }
 
-    fn write_to_control(&mut self, data: u8) {
+    fn write_control(&mut self, data: u8) {
         self.control.update(data);
     }
 } 
@@ -155,19 +156,19 @@ pub mod test {
     #[test]
     fn test_ppu_write_vram() {
         let mut ppu = NesPPU::new_empty_rom();
-        ppu.write_to_address(0x23);
-        ppu.write_to_address(0x05);
-        ppu.write_to_data(0x66);
+        ppu.write_address(0x23);
+        ppu.write_address(0x05);
+        ppu.write_data(0x66);
         assert_eq!(ppu.vram[0x0305], 0x66);
     }
 
     #[test]
     fn test_ppu_read_vram() {
         let mut ppu = NesPPU::new_empty_rom();
-        ppu.write_to_control(0);
+        ppu.write_control(0);
         ppu.vram[0x0305] = 0x66;
-        ppu.write_to_address(0x23);
-        ppu.write_to_address(0x05);
+        ppu.write_address(0x23);
+        ppu.write_address(0x05);
         ppu.read_data(); // read, then address+=1
         assert_eq!(ppu.address.get(), 0x2306);
         assert_eq!(ppu.read_data(), 0x66);
@@ -176,12 +177,12 @@ pub mod test {
     #[test]
     fn test_ppu_read_over_page() {
         let mut ppu = NesPPU::new_empty_rom();
-        ppu.write_to_control(0);
+        ppu.write_control(0);
         ppu.vram[0x01ff] = 0x66;
         ppu.vram[0x0200] = 0x77; // across page
 
-        ppu.write_to_address(0x21);
-        ppu.write_to_address(0xff);
+        ppu.write_address(0x21);
+        ppu.write_address(0xff);
 
         ppu.read_data();
         assert_eq!(ppu.read_data(), 0x66);
@@ -191,13 +192,13 @@ pub mod test {
     #[test]
     fn test_ppu_vram_reads_step_32() {
         let mut ppu = NesPPU::new_empty_rom();
-        ppu.write_to_control(ControlRegister::VRAM_ADD_INCREMENT.bits());
+        ppu.write_control(ControlRegister::VRAM_ADD_INCREMENT.bits());
         ppu.vram[0x01ff] = 0x66;
         ppu.vram[0x01ff + 32] = 0x77;
         ppu.vram[0x01ff + 64] = 0x88;
 
-        ppu.write_to_address(0x21);
-        ppu.write_to_address(0xff);
+        ppu.write_address(0x21);
+        ppu.write_address(0xff);
 
         ppu.read_data();
         assert_eq!(ppu.read_data(), 0x66);
@@ -209,20 +210,20 @@ pub mod test {
     fn test_vram_horizontal_mirror() {
         let mut ppu = NesPPU::new(vec![0; 2048], Mirroring::HORIZONTAL);
         // HORIZONTAL -> AA'BB'
-        ppu.write_to_address(0x24);
-        ppu.write_to_address(0x05);
-        ppu.write_to_data(0x66); //write to A'
-        ppu.write_to_address(0x28);
-        ppu.write_to_address(0x05);
-        ppu.write_to_data(0x77); //write to B
+        ppu.write_address(0x24);
+        ppu.write_address(0x05);
+        ppu.write_data(0x66); //write to A'
+        ppu.write_address(0x28);
+        ppu.write_address(0x05);
+        ppu.write_data(0x77); //write to B
 
-        ppu.write_to_address(0x20);
-        ppu.write_to_address(0x05);
+        ppu.write_address(0x20);
+        ppu.write_address(0x05);
         ppu.read_data();
         assert_eq!(ppu.read_data(), 0x66); // read A' from A
 
-        ppu.write_to_address(0x2C);
-        ppu.write_to_address(0x05);
+        ppu.write_address(0x2C);
+        ppu.write_address(0x05);
         ppu.read_data();
         assert_eq!(ppu.read_data(), 0x77); //read B from B'
     }
@@ -231,20 +232,20 @@ pub mod test {
     fn test_vram_vertical_mirror() {
         let mut ppu = NesPPU::new(vec![0; 2048], Mirroring::VERTICAL);
         // VERTICAL -> ABA'B'
-        ppu.write_to_address(0x20);
-        ppu.write_to_address(0x05);
-        ppu.write_to_data(0x66); //write to A
-        ppu.write_to_address(0x2C);
-        ppu.write_to_address(0x05);
-        ppu.write_to_data(0x77); //write to B'
+        ppu.write_address(0x20);
+        ppu.write_address(0x05);
+        ppu.write_data(0x66); //write to A
+        ppu.write_address(0x2C);
+        ppu.write_address(0x05);
+        ppu.write_data(0x77); //write to B'
 
-        ppu.write_to_address(0x28);
-        ppu.write_to_address(0x05);
+        ppu.write_address(0x28);
+        ppu.write_address(0x05);
         ppu.read_data();
         assert_eq!(ppu.read_data(), 0x66); //read A from A'
 
-        ppu.write_to_address(0x24);
-        ppu.write_to_address(0x05);
+        ppu.write_address(0x24);
+        ppu.write_address(0x05);
         ppu.read_data();
         assert_eq!(ppu.read_data(), 0x77); //read B' from B
     }

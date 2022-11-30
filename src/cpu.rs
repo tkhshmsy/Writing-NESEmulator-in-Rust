@@ -48,7 +48,7 @@ pub struct CPU {
 }
 
 impl Memory for CPU {
-    fn memory_read_u8(&self, addr: u16) -> u8 {
+    fn memory_read_u8(&mut self, addr: u16) -> u8 {
         return self.bus.memory_read_u8(addr);
     }
 
@@ -70,7 +70,7 @@ impl CPU {
         }
     }
 
-    pub fn get_absolute_address(&self, mode: &AddressingMode, addr: u16) -> u16 {
+    pub fn get_absolute_address(&mut self, mode: &AddressingMode, addr: u16) -> u16 {
         match mode {
             AddressingMode::Immediate => addr,
             AddressingMode::ZeroPage => self.bus.memory_read_u8(addr) as u16,
@@ -117,7 +117,7 @@ impl CPU {
         }
     }
 
-    fn get_operand_address(&self, mode: &AddressingMode) -> u16 {
+    fn get_operand_address(&mut self, mode: &AddressingMode) -> u16 {
         match mode {
             AddressingMode::Immediate => self.reg_pc,
             _ => self.get_absolute_address(mode, self.reg_pc),
