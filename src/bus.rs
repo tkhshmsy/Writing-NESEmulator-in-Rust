@@ -116,7 +116,7 @@ impl Memory for Bus {
                 self.ppu.write_control(data);
             },
             PPU_REG_MASK => {
-                todo!();
+                self.ppu.write_mask(data);
             },
             PPU_REG_STATUS => {
                 panic!("invalid write to PPU Status register");

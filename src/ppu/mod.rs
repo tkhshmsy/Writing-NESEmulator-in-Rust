@@ -2,12 +2,14 @@ pub mod address;
 pub mod control;
 pub mod status;
 pub mod scroll;
+pub mod mask;
 
 use crate::rom::Mirroring;
 use address::AddressRegister;
 use control::ControlRegister;
 use status::StatusRegister;
 use scroll::ScrollRegister;
+use mask::MaskRegister;
 
 pub const PPU_REG_CONTROLLER: u16  = 0x2000;
 pub const PPU_REG_MASK: u16        = 0x2001;
@@ -43,6 +45,7 @@ pub struct NesPPU {
     pub control: ControlRegister,
     pub status: StatusRegister,
     pub scroll: ScrollRegister,
+    pub mask: MaskRegister,
 }
 
 pub trait PPU {
@@ -52,6 +55,7 @@ pub trait PPU {
     fn write_control(&mut self, data: u8);
     fn read_status(&mut self) -> u8;
     fn write_scroll(&mut self, data: u8);
+    fn write_mask(&mut self, data: u8);
 }
 
 impl NesPPU {
@@ -72,6 +76,7 @@ impl NesPPU {
             control: ControlRegister::new(),
             status: StatusRegister::new(),
             scroll: ScrollRegister::new(),
+            mask: MaskRegister::new(),
         }
     }
 
@@ -167,9 +172,12 @@ impl PPU for NesPPU {
     }
 
     fn write_scroll(&mut self, data: u8) {
-        self.scroll.write(data);
+        self.scroll.update(data);
     }
 
+    fn write_mask(&mut self, data: u8) {
+        self.mask.update(data);
+    }
 } 
 
 #[cfg(test)]
