@@ -83,7 +83,7 @@ impl Memory for Bus {
                 return self.ppu.read_status();
             },
             PPU_REG_OAM_DATA => {
-                todo!();
+                return self.ppu.read_oam_data();
             },
             PPU_REG_DATA => {
                 return self.ppu.read_data();
@@ -122,10 +122,10 @@ impl Memory for Bus {
                 panic!("invalid write to PPU Status register");
             },
             PPU_REG_OAM_ADDRESS => {
-                todo!();
+                self.ppu.write_oam_address(data);
             },
             PPU_REG_OAM_DATA => {
-                todo!();
+                self.ppu.write_oam_data(data);
             },
             PPU_REG_SCROLL => {
                 self.ppu.write_scroll(data);

@@ -37,6 +37,7 @@ pub struct NesPPU {
     pub chr_rom: Vec<u8>,
     pub palette_table: [u8; 32],
     pub vram: [u8; 2048],
+    pub oam_address: u8,
     pub oam_data: [u8; 256],
     internal_data_buffer: u8,
 
@@ -56,6 +57,10 @@ pub trait PPU {
     fn read_status(&mut self) -> u8;
     fn write_scroll(&mut self, data: u8);
     fn write_mask(&mut self, data: u8);
+    fn write_oam_address(&mut self, data: u8);
+    fn write_oam_data(&mut self, data: u8);
+    fn read_oam_data(&self) -> u8;
+    fn write_oam_dma(&mut self, data: &[u8; 256]);
 }
 
 impl NesPPU {
@@ -68,6 +73,7 @@ impl NesPPU {
             chr_rom: chr_rom,
             palette_table: [0; 32],
             vram: [0; 2048],
+            oam_address: 0,
             oam_data: [0; 256],
             internal_data_buffer: 0x00,
 
@@ -178,6 +184,27 @@ impl PPU for NesPPU {
     fn write_mask(&mut self, data: u8) {
         self.mask.update(data);
     }
+
+    fn write_oam_address(&mut self, data: u8) {
+        self.oam_address = data;
+    }
+
+    fn write_oam_data(&mut self, data: u8) {
+        self.oam_data[self.oam_address as usize] = data;
+        self.oam_address = self.oam_address.wrapping_add(1);
+    }
+
+    fn read_oam_data(&self) -> u8 {
+        return self.oam_data[self.oam_address as usize];
+    }
+
+    fn write_oam_dma(&mut self, data: &[u8; 256]) {
+        for p in data.iter() {
+            self.oam_data[self.oam_address as usize] = *p;
+            self.oam_address = self.oam_address.wrapping_add(1);
+        }
+    }
+
 } 
 
 #[cfg(test)]
