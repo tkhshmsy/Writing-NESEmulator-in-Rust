@@ -307,4 +307,75 @@ pub mod test {
         ppu.read_data();
         assert_eq!(ppu.read_data(), 0x77); //read B' from B
     }
+
+    #[test]
+    fn test_status() {
+        let mut ppu = NesPPU::new_empty_rom();
+        ppu.vram[0x0305] = 0x66;
+        ppu.write_address(0x21);
+        ppu.write_address(0x23);
+        ppu.write_address(0x05);
+        ppu.read_data();
+        assert_ne!(ppu.read_data(), 0x66);
+
+        ppu.read_status(); // reset
+        ppu.write_address(0x23);
+        ppu.write_address(0x05);
+        ppu.read_data();
+        assert_eq!(ppu.read_data(), 0x66);
+    }
+
+    #[test]
+    fn test_vram_mirroring() {
+        let mut ppu = NesPPU::new_empty_rom();
+        ppu.write_control(0x00);
+        ppu.vram[0x0305] = 0x66;
+        ppu.write_address(0x63);
+        ppu.write_address(0x05); // 0x6305 -> 0x2305
+        ppu.read_data();
+        assert_eq!(ppu.read_data(), 0x66);
+    }
+
+    #[test]
+    fn test_reset_vblank() {
+        let mut ppu = NesPPU::new_empty_rom();
+        ppu.status.set_vblank_status(true);
+
+        assert!(ppu.status.is_in_vblank());
+        let status = ppu.read_status();
+        assert_eq!(status & 0x80, 0x80);
+        assert_eq!(ppu.status.read() & 0x80, 0x00);
+        assert!(!ppu.status.is_in_vblank());
+    }
+
+    #[test]
+    fn test_oam_read_write() {
+        let mut ppu = NesPPU::new_empty_rom();
+        ppu.write_oam_address(0x10);
+        ppu.write_oam_data(0x66);
+        ppu.write_oam_data(0x77);
+
+        ppu.write_oam_address(0x10);
+        assert_eq!(ppu.read_oam_data(), 0x66);
+        ppu.write_oam_address(0x11);
+        assert_eq!(ppu.read_oam_data(), 0x77);
+    }
+
+    #[test]
+    fn test_oam_dma() {
+        let mut ppu = NesPPU::new_empty_rom();
+
+        let mut data = [0x66; 256];
+        data[0] = 0x77;
+        data[0xff] = 0x88;
+        ppu.write_oam_address(0x10);
+        ppu.write_oam_dma(&data);
+
+        ppu.write_oam_address(0x10);
+        assert_eq!(ppu.read_oam_data(), 0x77);
+        ppu.write_oam_address(0x0f);
+        assert_eq!(ppu.read_oam_data(), 0x88);
+        ppu.write_oam_address(0x11);
+        assert_eq!(ppu.read_oam_data(), 0x66);
+    }
 }
