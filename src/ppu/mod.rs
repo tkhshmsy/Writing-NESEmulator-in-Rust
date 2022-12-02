@@ -40,6 +40,8 @@ pub struct NesPPU {
     pub oam_address: u8,
     pub oam_data: [u8; 256],
     internal_data_buffer: u8,
+    cycles: usize,
+    scanline: u16,
 
     pub mirroring: Mirroring,
     pub address: AddressRegister,
@@ -76,6 +78,8 @@ impl NesPPU {
             oam_address: 0,
             oam_data: [0; 256],
             internal_data_buffer: 0x00,
+            cycles: 0,
+            scanline: 0,
 
             mirroring: mirroring,
             address: AddressRegister::new(),
@@ -105,6 +109,26 @@ impl NesPPU {
             // FOUR_SCREEN -> ABCD
             _ => index,
         }
+    }
+
+    pub fn tick(&mut self, cycles: u8) -> bool {
+        self.cycles += cycles as usize;
+        if self.cycles >= 341 {
+            self.cycles = self.cycles - 341;
+            self.scanline += 1;
+
+            if self.scanline == 241 {
+                if self.control.generate_vblank_nmi() {
+                    self.status.set_vblank_status(true);
+                    todo!();                }
+            }
+            if self.scanline >= 262 {
+                self.scanline = 0;
+                self.status.set_vblank_status(false);
+                return true;
+            }
+        }
+        return false;
     }
 }
 

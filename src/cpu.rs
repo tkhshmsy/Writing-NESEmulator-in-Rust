@@ -998,6 +998,9 @@ impl CPU {
                 },
                 _ => todo!()
             }
+
+            self.bus.tick(opcode.cycles); //sync clock for other modules
+
             if pc_state == self.reg_pc {
                 self.reg_pc += (opcode.len - 1) as u16;
             }
