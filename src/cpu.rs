@@ -57,6 +57,28 @@ impl Memory for CPU {
     }
 }
 
+mod interrupt {
+    #[derive(PartialEq, Eq)]
+    pub enum InterruptType {
+        NMI,
+    }
+
+    #[derive(PartialEq, Eq)]
+    pub(super) struct Interrupt {
+        pub(super) interrupt_type: InterruptType,
+        pub(super) vector_address: u16,
+        pub(super) break_flag_mask: u8,
+        pub(super) cpu_cycles: u8,
+    }
+
+    pub(super) const NMI: Interrupt = Interrupt {
+        interrupt_type: InterruptType::NMI,
+        vector_address: 0xfffa,
+        break_flag_mask: 0b0010_0000,
+        cpu_cycles: 2,
+    };
+}
+
 impl CPU {
     pub fn new(bus: Bus) -> Self {
         CPU {
@@ -649,6 +671,17 @@ impl CPU {
         self.reg_pc = self.bus.memory_read_u16(0xFFFC);
     }
 
+    fn interrupt(&mut self, interrupt: interrupt::Interrupt) {
+        self.stack_push_u16(self.reg_pc);
+        let mut flags = self.status.clone();
+        flags.set(CpuFlags::BREAK1, interrupt.break_flag_mask & 0x10 == 0x10);
+        flags.set(CpuFlags::BREAK2, interrupt.break_flag_mask & 0x20 == 0x20);
+        self.stack_push_u8(flags.bits);
+        self.status.set(CpuFlags::INTERRUPT_DISABLE, true);
+        self.bus.tick(interrupt.cpu_cycles);
+        self.reg_pc = self.memory_read_u16(interrupt.vector_address);
+    }
+
     #[allow(dead_code)]
     fn load(&mut self, program: Vec<u8>) {
         // only for test code -> 0x0600
@@ -677,6 +710,10 @@ impl CPU {
         let ref opcodes: HashMap<u8, &'static opcodes::OpCode> = *opcodes::OPCODE_MAP;
 
         loop {
+            if let Some(_nmi) = self.bus.poll_nmi() {
+                self.interrupt(interrupt::NMI);
+            }
+
             callback(self);
 
             let code = self.bus.memory_read_u8(self.reg_pc);

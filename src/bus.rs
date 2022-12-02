@@ -71,6 +71,10 @@ impl Bus {
         self.cycles += cycles as usize;
         self.ppu.tick(cycles * 3); // PPU cycles are 3 times of CPU cycles
     }
+
+    pub fn poll_nmi(&mut self) -> Option<u8> {
+        return self.ppu.nmi_interrupt.take();
+    }
 }
 
 impl Memory for Bus {

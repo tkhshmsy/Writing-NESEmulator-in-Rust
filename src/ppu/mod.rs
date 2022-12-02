@@ -42,6 +42,7 @@ pub struct NesPPU {
     internal_data_buffer: u8,
     cycles: usize,
     scanline: u16,
+    pub nmi_interrupt: Option<u8>,
 
     pub mirroring: Mirroring,
     pub address: AddressRegister,
@@ -80,6 +81,7 @@ impl NesPPU {
             internal_data_buffer: 0x00,
             cycles: 0,
             scanline: 0,
+            nmi_interrupt: None,
 
             mirroring: mirroring,
             address: AddressRegister::new(),
@@ -129,6 +131,10 @@ impl NesPPU {
             }
         }
         return false;
+    }
+
+    fn poll_nmi(&mut self) -> Option<u8> {
+        return self.nmi_interrupt.take();
     }
 }
 
@@ -190,7 +196,11 @@ impl PPU for NesPPU {
     }
 
     fn write_control(&mut self, data: u8) {
+        let before_nmi_status = self.control.generate_vblank_nmi();
         self.control.update(data);
+        if !before_nmi_status && self.control.generate_vblank_nmi() && self.status.is_in_vblank() {
+            self.nmi_interrupt = Some(1);
+        }
     }
 
     fn read_status(&mut self) -> u8 {
