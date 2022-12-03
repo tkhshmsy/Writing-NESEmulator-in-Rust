@@ -1,3 +1,5 @@
+use crate::ppu::NesPPU;
+
 #[rustfmt::skip]
 pub static SYSTEM_PALLETE: [(u8,u8,u8); 64] = [
     (0x80, 0x80, 0x80), (0x00, 0x3D, 0xA6), (0x00, 0x12, 0xB0), (0x44, 0x00, 0x96), (0xA1, 0x00, 0x5E),
@@ -35,6 +37,36 @@ impl Frame {
             self.data[base] = rgb.0;
             self.data[base + 1] = rgb.1;
             self.data[base + 2] = rgb.2;
+        }
+    }
+}
+
+pub fn render(ppu: &NesPPU, frame: &mut Frame) {
+    let bank = ppu.control.background_pattern_address();
+    for i in 0..0x03c0 {
+        let ptr = ppu.vram[i] as u16;
+        let tx = i % 32;
+        let ty = i / 32;
+        let head = (bank + ptr * 16) as usize;
+        let tail = (bank + ptr * 16 + 15) as usize;
+        let tile = &ppu.chr_rom[head..=tail];
+
+        for y in 0..=7 {
+            let mut hi = tile[y];
+            let mut lo = tile[y + 8];
+            for x in (0..=7).rev() {
+                let value = (0x01 & hi) << 1 | (0x01 & lo);
+                hi = hi >> 1;
+                lo = lo >> 1;
+                let rgb = match value {
+                    0 => SYSTEM_PALLETE[0x01],
+                    1 => SYSTEM_PALLETE[0x23],
+                    2 => SYSTEM_PALLETE[0x27],
+                    3 => SYSTEM_PALLETE[0x30],
+                    _ => panic!("out of pallete"),
+                };
+                frame.set_pixel(tx * 8 + x, ty * 8 + y, rgb);
+            }
         }
     }
 }
