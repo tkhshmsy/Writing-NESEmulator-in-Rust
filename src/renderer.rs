@@ -60,6 +60,15 @@ fn bg_palette(ppu: &NesPPU, column: usize, row : usize) -> [u8; 4] {
             ppu.palette_table[palette_start + 2]];
 }
 
+fn sprite_palette(ppu: &NesPPU, palette_index: u8) -> [u8; 4] {
+    let start = 0x11 + (palette_index * 4) as usize;
+    return [0,
+            ppu.palette_table[start],
+            ppu.palette_table[start + 1],
+            ppu.palette_table[start + 2],
+    ]
+}
+
 pub fn render(ppu: &NesPPU, frame: &mut Frame) {
     let bank = ppu.control.background_pattern_address();
     for i in 0..0x03c0 {
@@ -86,6 +95,45 @@ pub fn render(ppu: &NesPPU, frame: &mut Frame) {
                     _ => panic!("out of palette"),
                 };
                 frame.set_pixel(tx * 8 + x, ty * 8 + y, rgb);
+            }
+        }
+    }
+
+    for i in (0 .. ppu.oam_data.len()).step_by(4).rev() {
+        let index = ppu.oam_data[i + 1] as u16;
+        let tx = ppu.oam_data[i + 3] as usize;
+        let ty = ppu.oam_data[i] as usize;
+
+        let flip_vertical = ((ppu.oam_data[i + 2] >> 7) & 0x01 == 0x01) as bool;
+        let flip_horizontal = ((ppu.oam_data[i + 2] >> 6) & 0x01 == 0x01) as bool;
+        let palette_index = ppu.oam_data[i + 2] & 0x03;
+        let sprite_palette = sprite_palette(ppu, palette_index);
+
+        let bank: u16 = ppu.control.sprite_pattern_address();
+        let head = (bank + index * 16) as usize;
+        let tail = (bank + index * 16 + 15) as usize;
+        let tile = &ppu.chr_rom[head ..= tail];
+
+        for y in 0 ..= 7 {
+            let mut hi = tile[y];
+            let mut lo = tile[y + 8];
+            'draw_sprite_row: for x in (0 ..= 7).rev() {
+                let value = (0x01 & lo) << 1 | (0x01 & hi);
+                hi = hi >> 1;
+                lo = lo >> 1;
+                let rgb = match value {
+                    0 => continue 'draw_sprite_row,
+                    1 => SYSTEM_PALETTE[sprite_palette[1] as usize],
+                    2 => SYSTEM_PALETTE[sprite_palette[2] as usize],
+                    3 => SYSTEM_PALETTE[sprite_palette[3] as usize],
+                    _ => panic!("out of sprite palette"),
+                };
+                match (flip_horizontal, flip_vertical) {
+                    (false, false) => frame.set_pixel(tx + x, ty + y, rgb),
+                    (true,  false) => frame.set_pixel(tx + 7 - x, ty + y, rgb),
+                    (false,  true) => frame.set_pixel(tx + x, ty + 7 - y, rgb),
+                    (true,   true) => frame.set_pixel(tx + 7 - x, ty + 7 - y, rgb),
+                }
             }
         }
     }
