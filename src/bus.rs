@@ -90,7 +90,7 @@ impl<'a> Bus<'a> {
     }
 
     pub fn poll_nmi(&mut self) -> Option<u8> {
-        return self.ppu.nmi_interrupt.take();
+        return self.ppu.poll_nmi();
     }
 }
 

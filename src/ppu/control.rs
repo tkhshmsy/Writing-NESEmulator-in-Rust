@@ -36,10 +36,10 @@ impl ControlRegister {
     }
 
     pub fn vram_address_increment(&self) -> u8 {
-        if !self.contains(ControlRegister::VRAM_ADD_INCREMENT) {
-            return 1;
-        } else {
+        if self.contains(ControlRegister::VRAM_ADD_INCREMENT) {
             return 32;
+        } else {
+            return 1;
         }
     }
 
@@ -56,25 +56,25 @@ impl ControlRegister {
 
     pub fn sprite_pattern_address(&self) -> u16 {
         if self.contains(ControlRegister::SPRITE_PATTERN_ADDRESS) {
-            return 0;
-        } else {
             return 0x1000;
+        } else {
+            return 0;
         }
     }
 
     pub fn background_pattern_address(&self) -> u16 {
         if self.contains(ControlRegister::BACKGROUND_PATTERN_ADDRESS) {
-            return 0;
-        } else {
             return 0x1000;
+        } else {
+            return 0;
         }
     }
 
     pub fn sprite_size(&self) -> u8 {
         if self.contains(ControlRegister::SPRITE_SIZE) {
-            return 8;
-        } else {
             return 16;
+        } else {
+            return 8;
         }
     }
 

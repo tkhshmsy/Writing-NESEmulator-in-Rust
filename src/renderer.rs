@@ -48,7 +48,7 @@ pub fn render(ppu: &NesPPU, frame: &mut Frame) {
         let tx = i % 32;
         let ty = i / 32;
         let head = (bank + ptr * 16) as usize;
-        let tail = (bank + ptr * 16 + 15) as usize;
+        let tail = head + 15;;
         let tile = &ppu.chr_rom[head..=tail];
 
         for y in 0..=7 {

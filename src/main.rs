@@ -199,8 +199,5 @@ fn main() {
     });
     let mut cpu = cpu::CPU::new(bus);
     cpu.reset();
-    cpu.run_with_callback(move |cpu| {
-        println!("{}", trace::trace(cpu));
-    });
-// cpu.run();
+    cpu.run();
 }
