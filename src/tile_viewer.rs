@@ -12,7 +12,7 @@ use rom::Rom;
 // use bus::Memory;
 // use trace::trace;
 use renderer::Frame;
-use renderer::SYSTEM_PALLETE;
+use renderer::SYSTEM_PALETTE;
 
 use std::env;
 use getopts::Options;
@@ -44,10 +44,10 @@ fn show_tile(chr_rom: &Vec<u8>, bank: usize, tile_n: usize) ->Frame {
             upper = upper >> 1;
             lower = lower >> 1;
             let rgb = match value {
-                0 => SYSTEM_PALLETE[0x01],
-                1 => SYSTEM_PALLETE[0x23],
-                2 => SYSTEM_PALLETE[0x27],
-                3 => SYSTEM_PALLETE[0x30],
+                0 => SYSTEM_PALETTE[0x01],
+                1 => SYSTEM_PALETTE[0x23],
+                2 => SYSTEM_PALETTE[0x27],
+                3 => SYSTEM_PALETTE[0x30],
                 _ => panic!("out of palette"),
             };
             frame.set_pixel(x, y, rgb)
@@ -82,10 +82,10 @@ fn show_tile_bank(chr_rom: &Vec<u8>, bank: usize) ->Frame {
                 upper = upper >> 1;
                 lower = lower >> 1;
                 let rgb = match value {
-                    0 => SYSTEM_PALLETE[0x01],
-                    1 => SYSTEM_PALLETE[0x23],
-                    2 => SYSTEM_PALLETE[0x27],
-                    3 => SYSTEM_PALLETE[0x30],
+                    0 => SYSTEM_PALETTE[0x01],
+                    1 => SYSTEM_PALETTE[0x23],
+                    2 => SYSTEM_PALETTE[0x27],
+                    3 => SYSTEM_PALETTE[0x30],
                     _ => panic!("out of palette"),
                 };
                 frame.set_pixel(tile_x + x, tile_y + y, rgb)

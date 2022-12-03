@@ -1,7 +1,7 @@
 use crate::ppu::NesPPU;
 
 #[rustfmt::skip]
-pub static SYSTEM_PALLETE: [(u8,u8,u8); 64] = [
+pub static SYSTEM_PALETTE: [(u8,u8,u8); 64] = [
     (0x80, 0x80, 0x80), (0x00, 0x3D, 0xA6), (0x00, 0x12, 0xB0), (0x44, 0x00, 0x96), (0xA1, 0x00, 0x5E),
     (0xC7, 0x00, 0x28), (0xBA, 0x06, 0x00), (0x8C, 0x17, 0x00), (0x5C, 0x2F, 0x00), (0x10, 0x45, 0x00),
     (0x05, 0x4A, 0x00), (0x00, 0x47, 0x2E), (0x00, 0x41, 0x66), (0x00, 0x00, 0x00), (0x05, 0x05, 0x05),
@@ -41,6 +41,25 @@ impl Frame {
     }
 }
 
+fn bg_palette(ppu: &NesPPU, column: usize, row : usize) -> [u8; 4] {
+    let attr_table_index = row / 4 * 8 +  column / 4;
+    let attr_byte = ppu.vram[0x03c0 + attr_table_index];
+
+    let index = match (column % 4 / 2, row % 4 / 2) {
+        (0, 0) => attr_byte & 0x03,
+        (1, 0) => (attr_byte >> 2) & 0x03,
+        (0, 1) => (attr_byte >> 4) & 0x03,
+        (1, 1) => (attr_byte >> 6) & 0x03,
+        (_, _) => panic!("invalid bg index"),
+    };
+
+    let palette_start: usize = 1 + (index as usize) * 4;
+    return [ppu.palette_table[0],
+            ppu.palette_table[palette_start],
+            ppu.palette_table[palette_start + 1],
+            ppu.palette_table[palette_start + 2]];
+}
+
 pub fn render(ppu: &NesPPU, frame: &mut Frame) {
     let bank = ppu.control.background_pattern_address();
     for i in 0..0x03c0 {
@@ -48,22 +67,23 @@ pub fn render(ppu: &NesPPU, frame: &mut Frame) {
         let tx = i % 32;
         let ty = i / 32;
         let head = (bank + ptr * 16) as usize;
-        let tail = head + 15;;
+        let tail = head + 15;
         let tile = &ppu.chr_rom[head..=tail];
+        let palette = bg_palette(ppu, tx, ty);
 
         for y in 0..=7 {
             let mut hi = tile[y];
             let mut lo = tile[y + 8];
             for x in (0..=7).rev() {
-                let value = (0x01 & hi) << 1 | (0x01 & lo);
+                let value = (0x01 & lo) << 1 | (0x01 & hi);
                 hi = hi >> 1;
                 lo = lo >> 1;
                 let rgb = match value {
-                    0 => SYSTEM_PALLETE[0x01],
-                    1 => SYSTEM_PALLETE[0x23],
-                    2 => SYSTEM_PALLETE[0x27],
-                    3 => SYSTEM_PALLETE[0x30],
-                    _ => panic!("out of pallete"),
+                    0 => SYSTEM_PALETTE[ppu.palette_table[0] as usize],
+                    1 => SYSTEM_PALETTE[palette[1] as usize],
+                    2 => SYSTEM_PALETTE[palette[2] as usize],
+                    3 => SYSTEM_PALETTE[palette[3] as usize],
+                    _ => panic!("out of palette"),
                 };
                 frame.set_pixel(tx * 8 + x, ty * 8 + y, rgb);
             }
