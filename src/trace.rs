@@ -80,11 +80,12 @@ pub fn trace(cpu: &mut CPU) -> String {
 mod test {
     use super::*;
     use crate::bus::Bus;
+    use crate::ppu::NesPPU;
     use crate::rom::test::test_rom;
 
     #[test]
     fn test_format_trace() {
-        let mut bus = Bus::new_with_rom(test_rom());
+        let mut bus = Bus::new_with_rom(test_rom(), |_ppu: &NesPPU|{});
         bus.memory_write_u8(100, 0xa2);
         bus.memory_write_u8(101, 0x01);
         bus.memory_write_u8(102, 0xca);
@@ -116,7 +117,7 @@ mod test {
 
     #[test]
     fn test_format_mem_access() {
-        let mut bus = Bus::new_with_rom(test_rom());
+        let mut bus = Bus::new_with_rom(test_rom(), |_ppu: &NesPPU|{});
         // ORA ($33), Y
         bus.memory_write_u8(100, 0x11);
         bus.memory_write_u8(101, 0x33);

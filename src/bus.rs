@@ -24,12 +24,13 @@ const PPU_END: u16 = 0x3FFF;
 const ROM: u16 = 0x8000;
 const ROM_END: u16 = 0xFFFF;
 
-pub struct Bus {
+pub struct Bus<'call> {
     cpu_vram: [u8; 2048],
     prg_rom: Vec<u8>,
     ppu: NesPPU,
 
     cycles: usize,
+    vsync_callback: Box<dyn FnMut(&NesPPU) + 'call>,
 }
 
 pub trait Memory {
@@ -48,28 +49,44 @@ pub trait Memory {
     }
 }
 
-impl Bus {
-    pub fn new_with_rom(rom: Rom) -> Self {
+impl<'a> Bus<'a> {
+    pub fn new_with_rom<'call, F>(rom: Rom, vsync_callback: F) -> Bus<'call>
+    where
+        F: FnMut(&NesPPU) + 'call,
+    {
+        let ppu = NesPPU::new(rom.chr_rom, rom.screen_mirroring);
         Bus {
             cpu_vram: [0; 2048],
             prg_rom: rom.prg_rom,
-            ppu: NesPPU::new(rom.chr_rom, rom.screen_mirroring),
+            ppu: ppu,
             cycles: 0,
+            vsync_callback: Box::from(vsync_callback),
         }
     }
 
-    pub fn new() -> Self {
+    pub fn new<'call, F>(vsync_callback: F) -> Bus<'call>
+    where
+        F: FnMut(&NesPPU) + 'call,
+    {
         Bus {
             cpu_vram: [0; 2048],
             prg_rom: [0; 16384].to_vec(),
             ppu: NesPPU::new_empty_rom(),
             cycles: 0,
+            vsync_callback: Box::from(vsync_callback),
         }
     }
 
     pub fn tick(&mut self, cycles: u8) {
         self.cycles += cycles as usize;
+
+        let nmi_before = self.ppu.nmi_interrupt.is_some();
         self.ppu.tick(cycles * 3); // PPU cycles are 3 times of CPU cycles
+        let nmi_after = self.ppu.nmi_interrupt.is_some();
+
+        if !nmi_before && nmi_after {
+            (self.vsync_callback)(&self.ppu);
+        }
     }
 
     pub fn poll_nmi(&mut self) -> Option<u8> {
@@ -77,7 +94,7 @@ impl Bus {
     }
 }
 
-impl Memory for Bus {
+impl Memory for Bus<'_> {
     fn memory_read_u8(&mut self, addr: u16) -> u8 {
         match addr {
             RAM ..= RAM_END => {
@@ -90,7 +107,8 @@ impl Memory for Bus {
             | PPU_REG_SCROLL
             | PPU_REG_ADDRESS
             | PPU_REG_OAM_DMA => {
-                panic!("read write-only PPU register {:04x}", addr);
+                // panic!("read write-only PPU register {:04x}", addr);
+                return 0;
             },
             PPU_REG_STATUS => {
                 return self.ppu.read_status();
