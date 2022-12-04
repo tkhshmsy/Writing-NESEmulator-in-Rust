@@ -104,8 +104,8 @@ pub fn render(ppu: &NesPPU, frame: &mut Frame) {
         let tx = ppu.oam_data[i + 3] as usize;
         let ty = ppu.oam_data[i] as usize;
 
-        let flip_vertical = ((ppu.oam_data[i + 2] >> 7) & 0x01 == 0x01) as bool;
-        let flip_horizontal = ((ppu.oam_data[i + 2] >> 6) & 0x01 == 0x01) as bool;
+        let flip_vertical = (((ppu.oam_data[i + 2] >> 7) & 0x01) == 0x01) as bool;
+        let flip_horizontal = (((ppu.oam_data[i + 2] >> 6) & 0x01) == 0x01) as bool;
         let palette_index = ppu.oam_data[i + 2] & 0x03;
         let sprite_palette = sprite_palette(ppu, palette_index);
 
@@ -129,9 +129,9 @@ pub fn render(ppu: &NesPPU, frame: &mut Frame) {
                     _ => panic!("out of sprite palette"),
                 };
                 match (flip_horizontal, flip_vertical) {
-                    (false, false) => frame.set_pixel(tx + x, ty + y, rgb),
-                    (true,  false) => frame.set_pixel(tx + 7 - x, ty + y, rgb),
-                    (false,  true) => frame.set_pixel(tx + x, ty + 7 - y, rgb),
+                    (false, false) => frame.set_pixel(tx     + x, ty     + y, rgb),
+                    (true,  false) => frame.set_pixel(tx + 7 - x, ty     + y, rgb),
+                    (false,  true) => frame.set_pixel(tx     + x, ty + 7 - y, rgb),
                     (true,   true) => frame.set_pixel(tx + 7 - x, ty + 7 - y, rgb),
                 }
             }

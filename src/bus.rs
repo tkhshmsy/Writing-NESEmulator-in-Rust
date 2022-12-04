@@ -131,7 +131,7 @@ impl Memory for Bus<'_> {
                 return self.prg_rom[fixed_addr as usize];
             },
             _ => {
-                println!("invalid access at {:04x}",addr);
+                println!("invalid read at {:04x}",addr);
                 return 0;
             }
         }
@@ -167,9 +167,14 @@ impl Memory for Bus<'_> {
             PPU_REG_DATA => {
                 self.ppu.write_data(data);
             },
-            // PPU_REG_OAM_DMA => {
-            //     todo!();
-            // },
+            PPU_REG_OAM_DMA => {
+                let mut buffer: [u8; 256] = [0; 256];
+                let hi = (data as u16) << 8;
+                for i in 0 .. 256u16 {
+                    buffer[i as usize] = self.memory_read_u8(hi + i);
+                }
+                self.ppu.write_oam_dma(&buffer);
+            },
             PPU_REG_END ..= PPU_END => {
                 let fixed_addr = addr & 0x2007;
                 self.memory_write_u8(fixed_addr, data);
@@ -178,7 +183,7 @@ impl Memory for Bus<'_> {
                 panic!("invalid write to ROM at {:04x}",addr);
             },
             _ => {
-                println!("invalid access at {:04x}",addr);
+                println!("invalid write at {:04x}",addr);
             }
         }
     }
