@@ -5,6 +5,7 @@ pub mod opcodes;
 pub mod trace;
 pub mod ppu;
 pub mod renderer;
+pub mod joypad;
 
 // use bus::Bus;
 use rom::Rom;

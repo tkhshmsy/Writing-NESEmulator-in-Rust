@@ -5,8 +5,11 @@ pub mod rom;
 pub mod trace;
 pub mod ppu;
 pub mod renderer;
+pub mod joypad;
+
 use bus::Memory;
 use ppu::NesPPU;
+use joypad::Joypad;
 
 #[macro_use]
 extern crate lazy_static;
@@ -16,6 +19,7 @@ use std::env;
 use getopts::Options;
 use std::fs::{File, metadata};
 use std::io::Read;
+use std::collections::HashMap;
 use rand::Rng;
 use sdl2::event::Event;
 use sdl2::EventPump;
@@ -115,7 +119,7 @@ fn main() {
 
     // 'nestest'
     if mode == "nestest" {
-        let bus = bus::Bus::new_with_rom(rom, move |_ppu: &NesPPU|{});
+        let bus = bus::Bus::new_with_rom(rom, move |_ppu: &NesPPU, _joypad: &mut joypad::Joypad|{});
         let mut cpu = cpu::CPU::new(bus);
         cpu.reset();
         cpu.reg_pc = 0xc000;
@@ -127,7 +131,7 @@ fn main() {
 
     // 'snaketest'
     if mode == "snaketest" {
-        let bus = bus::Bus::new_with_rom(rom, move |_ppu: &NesPPU|{});
+        let bus = bus::Bus::new_with_rom(rom, move |_ppu: &NesPPU, _joypad: &mut joypad::Joypad|{});
         let mut cpu = cpu::CPU::new(bus);
         cpu.reset();
 
@@ -181,7 +185,17 @@ fn main() {
                         .create_texture_target(PixelFormatEnum::RGB24, 256 ,240).unwrap();
 
     let mut frame = renderer::Frame::new();
-    let bus = bus::Bus::new_with_rom(rom, move |ppu: &NesPPU|{
+    let mut keys = HashMap::new();
+    keys.insert(Keycode::Down,  joypad::JoypadButton::DOWN);
+    keys.insert(Keycode::Up,    joypad::JoypadButton::UP);
+    keys.insert(Keycode::Right, joypad::JoypadButton::RIGHT);
+    keys.insert(Keycode::Left,  joypad::JoypadButton::LEFT);
+    keys.insert(Keycode::A,     joypad::JoypadButton::SELECT);
+    keys.insert(Keycode::S,     joypad::JoypadButton::START);
+    keys.insert(Keycode::Z,     joypad::JoypadButton::BUTTON_B);
+    keys.insert(Keycode::X,     joypad::JoypadButton::BUTTON_A);
+
+    let bus = bus::Bus::new_with_rom(rom, move |ppu: &NesPPU, joypad: &mut Joypad|{
         renderer::render(ppu, &mut frame);
         texture.update(None, &frame.data, 256 * 3).unwrap();
         canvas.copy(&texture, None, None).unwrap();
@@ -192,6 +206,18 @@ fn main() {
                     keycode: Some( Keycode::Escape ),
                     ..
                 } => std::process::exit(0),
+
+                Event::KeyDown { keycode, .. } => {
+                    if let Some(key) = keys.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                        joypad.set_status(*key, true);
+                    }
+                }
+                Event::KeyUp { keycode, .. } => {
+                    if let Some(key) = keys.get(&keycode.unwrap_or(Keycode::Ampersand)) {
+                        joypad.set_status(*key, false);
+                    }
+                }
+
                 _ => {},
             }
         }

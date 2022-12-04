@@ -1,5 +1,6 @@
 use crate::rom::*;
 use crate::ppu::*;
+use crate::joypad::*;
 
 // memory map
 //
@@ -17,20 +18,25 @@ use crate::ppu::*;
 // 0x8000 - 0xFFFF: ROM
 // => 0xFFFC - 0xFFFD: Start Vector
 
-const RAM: u16 = 0x0000;
-const RAM_END: u16 = 0x1FFF;
-const PPU: u16 = 0x2000;
-const PPU_END: u16 = 0x3FFF;
-const ROM: u16 = 0x8000;
-const ROM_END: u16 = 0xFFFF;
+const RAM: u16      = 0x0000;
+const RAM_END: u16  = 0x1FFF;
+const PPU: u16      = 0x2000;
+const PPU_END: u16  = 0x3FFF;
+const APU: u16      = 0x4000;
+const APU_END: u16  = 0x4015;
+const JOYPAD_1: u16 = 0x4016;
+const JOYPAD_2: u16 = 0x4017;
+const ROM: u16      = 0x8000;
+const ROM_END: u16  = 0xFFFF;
 
 pub struct Bus<'call> {
     cpu_vram: [u8; 2048],
     prg_rom: Vec<u8>,
     ppu: NesPPU,
+    joypad_1: Joypad,
 
     cycles: usize,
-    vsync_callback: Box<dyn FnMut(&NesPPU) + 'call>,
+    vsync_callback: Box<dyn FnMut(&NesPPU, &mut Joypad) + 'call>,
 }
 
 pub trait Memory {
@@ -52,13 +58,14 @@ pub trait Memory {
 impl<'a> Bus<'a> {
     pub fn new_with_rom<'call, F>(rom: Rom, vsync_callback: F) -> Bus<'call>
     where
-        F: FnMut(&NesPPU) + 'call,
+        F: FnMut(&NesPPU, &mut Joypad) + 'call,
     {
         let ppu = NesPPU::new(rom.chr_rom, rom.screen_mirroring);
         Bus {
             cpu_vram: [0; 2048],
             prg_rom: rom.prg_rom,
             ppu: ppu,
+            joypad_1: Joypad::new(),
             cycles: 0,
             vsync_callback: Box::from(vsync_callback),
         }
@@ -66,12 +73,13 @@ impl<'a> Bus<'a> {
 
     pub fn new<'call, F>(vsync_callback: F) -> Bus<'call>
     where
-        F: FnMut(&NesPPU) + 'call,
+        F: FnMut(&NesPPU, &mut Joypad) + 'call,
     {
         Bus {
             cpu_vram: [0; 2048],
             prg_rom: [0; 16384].to_vec(),
             ppu: NesPPU::new_empty_rom(),
+            joypad_1: Joypad::new(),
             cycles: 0,
             vsync_callback: Box::from(vsync_callback),
         }
@@ -85,7 +93,7 @@ impl<'a> Bus<'a> {
         let nmi_after = self.ppu.nmi_interrupt.is_some();
 
         if !nmi_before && nmi_after {
-            (self.vsync_callback)(&self.ppu);
+            (self.vsync_callback)(&self.ppu, &mut self.joypad_1);
         }
     }
 
@@ -122,7 +130,18 @@ impl Memory for Bus<'_> {
             PPU_REG_END ..= PPU_END => {
                 let fixed_addr = addr & 0x2007;
                 return self.memory_read_u8(fixed_addr);
-            }
+            },
+            APU ..= APU_END => {
+                // TODO
+                return 0;
+            },
+            JOYPAD_1 => {
+                return self.joypad_1.read();
+            },
+            JOYPAD_2 => {
+                // TODO
+                return 0;
+            },
             ROM ..= ROM_END => {
                 let mut fixed_addr = addr - 0x8000;
                 if self.prg_rom.len() == 0x4000 {
@@ -178,6 +197,15 @@ impl Memory for Bus<'_> {
             PPU_REG_END ..= PPU_END => {
                 let fixed_addr = addr & 0x2007;
                 self.memory_write_u8(fixed_addr, data);
+            },
+            APU ..= APU_END => {
+                // TODO
+            },
+            JOYPAD_1 => {
+                self.joypad_1.write(data);
+            },
+            JOYPAD_2 => {
+                // TODO
             },
             ROM ..= ROM_END => {
                 panic!("invalid write to ROM at {:04x}",addr);

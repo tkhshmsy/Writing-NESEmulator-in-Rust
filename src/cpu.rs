@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use crate::opcodes;
 use crate::bus::Memory;
 use crate::bus::Bus;
+use crate::joypad::Joypad;
 
 bitflags! {
     #[repr(transparent)]
@@ -1053,7 +1054,7 @@ mod test {
 
     #[test]
     fn test_0x69_adc_immidiate_for_not_c() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x55, 0x69, 0x10, 0x00]);
         // 0x55 + 0x10 = 0x65, no CARRY, no OVERFLOW
@@ -1065,7 +1066,7 @@ mod test {
 
     #[test]
     fn test_0x69_adc_immidiate_for_c() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x55, 0x69, 0xcc, 0x00]);
         // 0x55 + 0xcc = 33+256, with CARRY, no OVERFLOW
@@ -1077,7 +1078,7 @@ mod test {
 
     #[test]
     fn test_0x69_adc_immidiate_for_v() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x40, 0x69, 0x40, 0x00]);
         // 64 + 64 = 128(=-128), with OVERFLOW
@@ -1089,7 +1090,7 @@ mod test {
 
     #[test]
     fn test_0x69_adc_immidiate_with_carry_for_cz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0xfe, 0x69, 0x01, 0x00]);
         // 0xfe + 0x01 + CARRY = 0x00 + 256 with CARRY, no OVERFLOW
@@ -1101,7 +1102,7 @@ mod test {
 
     #[test]
     fn test_0x69_adc_immidiate_with_carried_overflow() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0x80, 0x69, 0xff, 0x00]);
         // 0x80 + 0xff + CARRY = 0x80 + 256 with CARRY, no OVERFLOW
@@ -1113,7 +1114,7 @@ mod test {
 
     #[test]
     fn test_0x29_and_with_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xd5, 0x29, 0xab, 0x00]);
         assert_eq!(cpu.reg_a, 0b1000_0001);
@@ -1123,7 +1124,7 @@ mod test {
 
     #[test]
     fn test_0x0a_asl_accumulator() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1110_0101, 0x0a, 0x00]);
         assert_eq!(cpu.reg_a, 0b1100_1010);
@@ -1134,7 +1135,7 @@ mod test {
 
     #[test]
     fn test_0x06_asl_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1010_0101, 0x85, 0x03, 0x06, 0x03, 0x00]);
         assert_eq!(cpu.memory_read_u8(0x03), 0b0100_1010);
@@ -1157,7 +1158,7 @@ mod test {
 
     #[test]
     fn test_0x24_bit_zeropage_for_v_not_nz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x45, 0x85, 0x03, 0xa9, 0x01, 0x24, 0x03, 0x00]);
         assert!(!cpu.status.contains(CpuFlags::ZERO));
@@ -1167,7 +1168,7 @@ mod test {
 
     #[test]
     fn test_0x24_bit_zeropage_for_nz_not_v() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x80, 0x85, 0x03, 0xa9, 0x7f, 0x24, 0x03, 0x00]);
         assert!(cpu.status.contains(CpuFlags::ZERO));
@@ -1197,7 +1198,7 @@ mod test {
 
     #[test]
     fn test_0x18_clc() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x80, 0x0a, 0x18, 0x00]);
         assert!(!cpu.status.contains(CpuFlags::CARRY))
@@ -1213,7 +1214,7 @@ mod test {
 
     #[test]
     fn test_0xb8_clv() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x40, 0x69, 0x40, 0xb8, 0x00]);
         assert_eq!(cpu.reg_a, 0x80);
@@ -1222,7 +1223,7 @@ mod test {
 
     #[test]
     fn test_0xc9_cmp_immidiate_for_cn_not_z() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x88, 0xc9, 0x04, 0x00]);
         assert!(cpu.status.contains(CpuFlags::CARRY));
@@ -1232,7 +1233,7 @@ mod test {
 
     #[test]
     fn test_0xc9_cmp_immidiate_for_cz_not_n() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x08, 0xc9, 0x08, 0x00]);
         assert!(cpu.status.contains(CpuFlags::CARRY));
@@ -1242,7 +1243,7 @@ mod test {
 
     #[test]
     fn test_0xc9_cmp_immidiate_for_n_not_cz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x00, 0xc9, 0x01, 0x00]);
         assert!(!cpu.status.contains(CpuFlags::CARRY));
@@ -1252,7 +1253,7 @@ mod test {
 
     #[test]
     fn test_0xe0_cpx_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa2, 0x88, 0xe0, 0x04, 0x00]);
         assert!(cpu.status.contains(CpuFlags::CARRY));
@@ -1262,7 +1263,7 @@ mod test {
 
     #[test]
     fn test_0xc0_cpy_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa0, 0x04, 0xc0, 0x88, 0x00]);
         assert!(!cpu.status.contains(CpuFlags::CARRY));
@@ -1272,7 +1273,7 @@ mod test {
 
     #[test]
     fn test_0xc6_dec_zeropage_for_not_nz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x04, 0x85, 0x05, 0xc6, 0x05, 0x00]);
         let data = cpu.memory_read_u8(0x05);
@@ -1283,7 +1284,7 @@ mod test {
 
     #[test]
     fn test_0xca_dex_for_z_not_n() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x01, 0xaa, 0xca, 0x00]);
         assert_eq!(cpu.reg_x, 0x00);
@@ -1293,7 +1294,7 @@ mod test {
 
     #[test]
     fn test_0x88_dey_for_n_not_z() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x00, 0xa8, 0x88, 0x00]);
         assert_eq!(cpu.reg_y, 0xff);
@@ -1303,7 +1304,7 @@ mod test {
 
     #[test]
     fn test_0x49_eor_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x50, 0x49, 0x14, 0x00]);
         assert_eq!(cpu.reg_a, 0x44);
@@ -1313,7 +1314,7 @@ mod test {
 
     #[test]
     fn test_0xe6_inc_zeropage_for_not_nz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x04, 0x85, 0x05, 0xe6, 0x05, 0x00]);
         let data = cpu.memory_read_u8(0x05);
@@ -1324,7 +1325,7 @@ mod test {
 
     #[test]
     fn test_0xe8_inx_for_z_not_n() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0x00]);
         assert_eq!(cpu.reg_x, 0x00);
@@ -1334,7 +1335,7 @@ mod test {
 
     #[test]
     fn test_0xe8_inx_overflow() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xff, 0xaa, 0xe8, 0xe8, 0x00]);
         assert_eq!(cpu.reg_x, 1);
@@ -1344,7 +1345,7 @@ mod test {
 
     #[test]
     fn test_0xc8_iny_for_n_not_z() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x7f, 0xa8, 0xc8, 0x00]);
         assert_eq!(cpu.reg_y, 0x80);
@@ -1354,7 +1355,7 @@ mod test {
 
     #[test]
     fn test_0x4c_jmp_absolute() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x0000, 0xa9);
         cpu.memory_write_u8(0x0001, 0xaa);
@@ -1369,7 +1370,7 @@ mod test {
 
     #[test]
     fn test_0x20_0x60_jsr_rts() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x0010, 0xa9);
         cpu.memory_write_u8(0x0011, 0x02);
@@ -1381,7 +1382,7 @@ mod test {
 
     #[test]
     fn test_0xa9_lda_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x05, 0x00]);
         assert_eq!(cpu.reg_a, 0x05);
@@ -1391,7 +1392,7 @@ mod test {
 
     #[test]
     fn test_0xa9_lda_immidiate_for_z() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x00, 0x00]);
         assert!(cpu.status.contains(CpuFlags::ZERO) == true);
@@ -1399,7 +1400,7 @@ mod test {
 
     #[test]
     fn test_0xa5_lda_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0x55);
         cpu.load_and_run(vec![0xa5, 0x10, 0x00]);
@@ -1408,7 +1409,7 @@ mod test {
 
     #[test]
     fn test_0xa2_ldx_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa2, 0xa5, 0x00]);
         assert_eq!(cpu.reg_x, 0xa5);
@@ -1418,7 +1419,7 @@ mod test {
 
     #[test]
     fn test_0xa0_ldy_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa0, 0x5a, 0x00]);
         assert_eq!(cpu.reg_y, 0x5a);
@@ -1428,7 +1429,7 @@ mod test {
 
     #[test]
     fn test_0x4a_lsr_accumulator() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1110_0101, 0x4a, 0x00]);
         assert_eq!(cpu.reg_a, 0b0111_0010);
@@ -1439,7 +1440,7 @@ mod test {
 
     #[test]
     fn test_0x46_lsr_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1010_0101, 0x85, 0x03, 0x46, 0x03, 0x00]);
         assert_eq!(cpu.memory_read_u8(0x03), 0b0101_0010);
@@ -1450,7 +1451,7 @@ mod test {
 
     #[test]
     fn test_0xea_nop() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xea, 0xa9, 0x55, 0x00]);
         assert_eq!(cpu.reg_a, 0x55);
@@ -1458,7 +1459,7 @@ mod test {
 
     #[test]
     fn test_0x09_ora_immmidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b0101_1010, 0x09, 0b1001_0100, 0x00]);
         assert_eq!(cpu.reg_a, 0b1101_1110);
@@ -1468,7 +1469,7 @@ mod test {
 
     #[test]
     fn test_0x48_0x68_pha_pla() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x80, 0x48, 0xa9, 0x00, 0x68, 0x00]);
         assert_eq!(cpu.reg_a, 0x80);
@@ -1478,7 +1479,7 @@ mod test {
 
     #[test]
     fn test_0x08_0x28_php_plp() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x80, 0x08, 0xa9, 0x00, 0x28, 0x00]);
         assert_eq!(cpu.reg_a, 0x00);
@@ -1488,7 +1489,7 @@ mod test {
 
     #[test]
     fn test_0x2a_rol_accumulator_with_carry() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0b1010_0000, 0x2a, 0x00]);
         assert_eq!(cpu.reg_a, 0b0100_0001);
@@ -1499,7 +1500,7 @@ mod test {
 
     #[test]
     fn test_0x26_rol_zeropage_without_carry() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b0010_0101, 0x85, 0x03, 0x26, 0x03, 0x00]);
         assert_eq!(cpu.memory_read_u8(0x03), 0b0100_1010);
@@ -1510,7 +1511,7 @@ mod test {
 
     #[test]
     fn test_0x6a_ror_accumulator_with_carry() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xff, 0xc9, 0x00, 0xa9, 0b1010_0000, 0x6a, 0x00]);
         assert_eq!(cpu.reg_a, 0b1101_0000);
@@ -1521,7 +1522,7 @@ mod test {
 
     #[test]
     fn test_0x66_ror_zeropage_without_carry() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1010_0001, 0x85, 0x03, 0x66, 0x03, 0x00]);
         assert_eq!(cpu.memory_read_u8(0x03), 0b0101_0000);
@@ -1532,7 +1533,7 @@ mod test {
 
     #[test]
     fn test_0xe9_sbc_immidiate_for_not_cz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x10, 0xe9, 0x01, 0x00]);
         // 16 - 1 - 1 = 14, no CARRY
@@ -1544,7 +1545,7 @@ mod test {
 
     #[test]
     fn test_0xe9_sbc_immidiate_for_v_not_cz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x80, 0xe9, 0x7f, 0x00]);
         // 0x80 - 0x7f - 1 = 0x00
@@ -1556,7 +1557,7 @@ mod test {
 
     #[test]
     fn test_0xe9_sbc_immidiate_with_carry_for_zv_not_c() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x80, 0x38, 0xe9, 0x7f, 0x00]);
         // 0x80 - 0x7f = 0x01 with OVERFLOW, no CARRY
@@ -1568,7 +1569,7 @@ mod test {
 
     #[test]
     fn test_0xe9_sbc_immidiate_with_carried_overflow() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x40, 0x38, 0xe9, 0xff, 0x00]);
         // 0x40 - 0xff = 0x41 with CARRY, no OVERFLOW
@@ -1580,7 +1581,7 @@ mod test {
 
     #[test]
     fn test_0x38_sec() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0x38, 0x00]);
         assert!(cpu.status.contains(CpuFlags::CARRY));
@@ -1588,7 +1589,7 @@ mod test {
 
     #[test]
     fn test_0xf8_sed() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xf8, 0x00]);
         assert!(cpu.status.contains(CpuFlags::DECIMAL_MODE));
@@ -1596,7 +1597,7 @@ mod test {
 
     #[test]
     fn test_0x78_sed() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0x78, 0x00]);
         assert!(cpu.status.contains(CpuFlags::INTERRUPT_DISABLE));
@@ -1604,7 +1605,7 @@ mod test {
 
     #[test]
     fn test_0x85_sta_to_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x55, 0x85, 0x03, 0x00]);
         let data = cpu.memory_read_u8(0x03);
@@ -1613,7 +1614,7 @@ mod test {
 
     #[test]
     fn test_0x95_sta_to_zeropage_x() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x55, 0xaa, 0xa9, 0xaa, 0x95, 0x03, 0x00]);
         let data = cpu.memory_read_u8(0x58);
@@ -1622,7 +1623,7 @@ mod test {
 
     #[test]
     fn test_0x86_stx_to_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa2, 0x55, 0x86, 0x03, 0x00]);
         let data = cpu.memory_read_u8(0x03);
@@ -1631,7 +1632,7 @@ mod test {
 
     #[test]
     fn test_0x84_sty_to_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa0, 0x55, 0x84, 0x03, 0x00]);
         let data = cpu.memory_read_u8(0x03);
@@ -1640,7 +1641,7 @@ mod test {
 
     #[test]
     fn test_0xaa_tax_move_a_to_x() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x0a, 0xaa, 0x00]);
         assert_eq!(cpu.reg_x, 10);
@@ -1648,7 +1649,7 @@ mod test {
 
     #[test]
     fn test_0xa8_tay_move_a_to_y() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x0a, 0xa8, 0x00]);
         assert_eq!(cpu.reg_y, 10);
@@ -1656,7 +1657,7 @@ mod test {
 
     #[test]
     fn test_0xba_tsx() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0x48, 0xba, 0x00]);
         assert_eq!(cpu.reg_sp, cpu.reg_x);
@@ -1664,7 +1665,7 @@ mod test {
 
     #[test]
     fn test_0x8a_txa() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa2, 0x55, 0x8a, 0x00]);
         assert_eq!(cpu.reg_x, cpu.reg_a);
@@ -1672,7 +1673,7 @@ mod test {
 
     #[test]
     fn test_0x9a_txs() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0x48, 0xba, 0xe8, 0x9a, 0x00]);
         assert_eq!(cpu.reg_x, cpu.reg_sp);
@@ -1680,7 +1681,7 @@ mod test {
 
     #[test]
     fn test_0x98_tya() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa0, 0x55, 0x98, 0x00]);
         assert_eq!(cpu.reg_y, cpu.reg_a);
@@ -1688,7 +1689,7 @@ mod test {
 
     #[test]
     fn test_0xe8_5_ops_working_together() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0xc0, 0xaa, 0xe8, 0x00]);
         assert_eq!(cpu.reg_x, 0xc1);
@@ -1697,7 +1698,7 @@ mod test {
     // ========== unofficial opcodes ==========
     #[test]
     fn test_0xa7_lax_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0x55);
         cpu.load_and_run(vec![0xa7, 0x10, 0x00]);
@@ -1707,7 +1708,7 @@ mod test {
 
     #[test]
     fn test_0x87_sax_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x55, 0xa2, 0xa5, 0x87, 0x10, 0x00]);
         assert_eq!(cpu.bus.memory_read_u8(0x10), 0x05);
@@ -1717,7 +1718,7 @@ mod test {
 
     #[test]
     fn test_0xeb_sbc_immidiate_for_not_cz() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x10, 0xeb, 0x01, 0x00]);
         // 16 - 1 - 1 = 14, no CARRY
@@ -1729,7 +1730,7 @@ mod test {
 
     #[test]
     fn test_0xc7_dcp_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0x55);
         cpu.load_and_run(vec![0xa9, 0x54, 0xc7, 0x10, 0x00]);
@@ -1741,7 +1742,7 @@ mod test {
 
     #[test]
     fn test_0xe7_isb_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0x55);
         cpu.load_and_run(vec![0xa9, 0x57, 0xe7, 0x10, 0x00]);
@@ -1754,7 +1755,7 @@ mod test {
 
     #[test]
     fn test_0x07_slo_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0b1010_0001);
         cpu.load_and_run(vec![0x38, 0xa9, 0b0100_1000, 0x07, 0x10, 0x00]);
@@ -1767,7 +1768,7 @@ mod test {
 
     #[test]
     fn test_0x27_rla_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0b0010_0001);
         cpu.load_and_run(vec![0x38, 0xa9, 0b0100_1000, 0x27, 0x10, 0x00]);
@@ -1780,7 +1781,7 @@ mod test {
 
     #[test]
     fn test_0x47_sre_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0b0010_0001);
         cpu.load_and_run(vec![0xa9, 0b0100_1000, 0x47, 0x10, 0x00]);
@@ -1793,7 +1794,7 @@ mod test {
 
     #[test]
     fn test_0x67_rra_zeropage() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.memory_write_u8(0x10, 0b0010_0001);
         cpu.load_and_run(vec![0xa9, 0b0101_1000, 0x67, 0x10, 0x00]);
@@ -1806,7 +1807,7 @@ mod test {
 
     #[test]
     fn test_0x4b_alr_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b0101_1001, 0x4b, 0b0101_0001, 0x00]);
         assert_eq!(cpu.reg_a, 0b0010_1000);
@@ -1817,7 +1818,7 @@ mod test {
 
     #[test]
     fn test_0x0b_anc_immidiate() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1101_1001, 0x0b, 0b1101_0001, 0x00]);
         assert_eq!(cpu.reg_a, 0b1101_0001);
@@ -1828,7 +1829,7 @@ mod test {
 
     #[test]
     fn test_0x6b_arr_immidiate_for_c_not_v() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1101_1001, 0x6b, 0b1101_0001, 0x00]);
         assert_eq!(cpu.reg_a, 0b0110_1000);
@@ -1840,7 +1841,7 @@ mod test {
 
     #[test]
     fn test_0x6b_arr_immidiate_for_v_not_c() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b0101_1001, 0x6b, 0b0101_0001, 0x00]);
         assert_eq!(cpu.reg_a, 0b0010_1000);
@@ -1852,7 +1853,7 @@ mod test {
 
     #[test]
     fn test_0x6b_arr_immidiate_for_cv() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b1001_1001, 0x6b, 0b1001_0001, 0x00]);
         assert_eq!(cpu.reg_a, 0b0100_1000);
@@ -1864,7 +1865,7 @@ mod test {
 
     #[test]
     fn test_0x6b_arr_immidiate_for_not_cv() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0b0001_1001, 0x6b, 0b0001_0001, 0x00]);
         assert_eq!(cpu.reg_a, 0b0000_1000);
@@ -1876,7 +1877,7 @@ mod test {
 
     #[test]
     fn test_0xcb_axs_immidiate_for_not_c() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x3f, 0xa2, 0x1f, 0xcb, 0x04, 0x00]);
         assert_eq!(cpu.reg_x, 0b0001_1011);
@@ -1887,7 +1888,7 @@ mod test {
 
     #[test]
     fn test_0xcb_axs_immidiate_for_c() {
-        let bus = Bus::new(|_ppu: &NesPPU|{});
+        let bus = Bus::new(|_ppu: &NesPPU, _joypad: &mut Joypad|{});
         let mut cpu = CPU::new(bus);
         cpu.load_and_run(vec![0xa9, 0x3f, 0xa2, 0x1f, 0xcb, 0x2f, 0x00]);
         assert_eq!(cpu.reg_x, 0b1111_0000);
