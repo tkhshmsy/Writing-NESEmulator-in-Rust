@@ -1,4 +1,5 @@
 use crate::ppu::NesPPU;
+use crate::rom::Mirroring;
 
 #[rustfmt::skip]
 pub static SYSTEM_PALETTE: [(u8,u8,u8); 64] = [
@@ -41,15 +42,15 @@ impl Frame {
     }
 }
 
-fn bg_palette(ppu: &NesPPU, column: usize, row : usize) -> [u8; 4] {
-    let attr_table_index = row / 4 * 8 +  column / 4;
-    let attr_byte = ppu.vram[0x03c0 + attr_table_index];
+fn bg_palette(ppu: &NesPPU, attribute_table: &[u8], column: usize, row : usize) -> [u8; 4] {
+    let attribute_table_index = row / 4 * 8 +  column / 4;
+    let attribute_byte = attribute_table[attribute_table_index];
 
     let index = match (column % 4 / 2, row % 4 / 2) {
-        (0, 0) => attr_byte & 0x03,
-        (1, 0) => (attr_byte >> 2) & 0x03,
-        (0, 1) => (attr_byte >> 4) & 0x03,
-        (1, 1) => (attr_byte >> 6) & 0x03,
+        (0, 0) => attribute_byte & 0x03,
+        (1, 0) => (attribute_byte >> 2) & 0x03,
+        (0, 1) => (attribute_byte >> 4) & 0x03,
+        (1, 1) => (attribute_byte >> 6) & 0x03,
         (_, _) => panic!("invalid bg index"),
     };
 
@@ -69,22 +70,44 @@ fn sprite_palette(ppu: &NesPPU, palette_index: u8) -> [u8; 4] {
     ]
 }
 
-pub fn render(ppu: &NesPPU, frame: &mut Frame) {
-    let bank = ppu.control.background_pattern_address();
-    for i in 0..0x03c0 {
-        let ptr = ppu.vram[i] as u16;
-        let tx = i % 32;
-        let ty = i / 32;
-        let head = (bank + ptr * 16) as usize;
-        let tail = head + 15;
-        let tile = &ppu.chr_rom[head..=tail];
-        let palette = bg_palette(ppu, tx, ty);
+struct ViewRect {
+    x1: usize,
+    y1: usize,
+    x2: usize,
+    y2: usize,
+}
 
-        for y in 0..=7 {
+impl ViewRect {
+    fn new(x1: usize, y1: usize, x2: usize, y2: usize) -> Self {
+        ViewRect {
+            x1: x1,
+            y1: y1,
+            x2: x2,
+            y2: y2,
+        }
+    }
+}
+
+fn render_name_table(ppu: &NesPPU, frame: &mut Frame, name_table: &[u8],
+    view_port: ViewRect, shift_x: isize, shift_y: isize) {
+    let bank = ppu.control.background_pattern_address();
+    let attribute_table = &name_table[0x3c0 .. 0x400];
+
+    for i in 0 .. 0x3c0 {
+        let index = name_table[i] as u16;
+        let column = i % 32;
+        let row = i / 32;
+        let head = (bank + index* 16) as usize;
+        let tail = (bank + index * 16 + 15) as usize;
+        let tile = &ppu.chr_rom[head ..= tail];
+        let palette = bg_palette(ppu, attribute_table, column, row);
+
+        for y in 0 ..= 7 {
             let mut hi = tile[y];
             let mut lo = tile[y + 8];
-            for x in (0..=7).rev() {
-                let value = (0x01 & lo) << 1 | (0x01 & hi);
+
+            for x in (0 ..= 7).rev() {
+                let value = (1 & lo) << 1 | (1 & hi);
                 hi = hi >> 1;
                 lo = lo >> 1;
                 let rgb = match value {
@@ -94,9 +117,55 @@ pub fn render(ppu: &NesPPU, frame: &mut Frame) {
                     3 => SYSTEM_PALETTE[palette[3] as usize],
                     _ => panic!("out of palette"),
                 };
-                frame.set_pixel(tx * 8 + x, ty * 8 + y, rgb);
+                let pixel_x = column * 8 + x;
+                let pixel_y = row * 8 + y;
+
+                if pixel_x >= view_port.x1 && pixel_x < view_port.x2 && pixel_y >= view_port.y1 && pixel_y < view_port.y2 {
+                    frame.set_pixel((shift_x + pixel_x as isize) as usize, (shift_y + pixel_y as isize) as usize, rgb);
+                }
             }
         }
+    }
+}
+
+pub fn render(ppu: &NesPPU, frame: &mut Frame) {
+    let scroll_x = (ppu.scroll.scroll_x) as usize;
+    let scroll_y = (ppu.scroll.scroll_y) as usize;
+    let (main_name_table, second_name_table) = match (&ppu.mirroring, ppu.control.name_table_address()) {
+        (Mirroring::VERTICAL, 0x2000)
+        | (Mirroring::VERTICAL, 0x2800)
+        | (Mirroring::HORIZONTAL, 0x2000)
+        | (Mirroring::HORIZONTAL, 0x2400) => {
+            (&ppu.vram[0 .. 0x400], &ppu.vram[0x400 .. 0x800])
+        },
+        (Mirroring::VERTICAL, 0x2400)
+        | (Mirroring::VERTICAL, 0x2C00)
+        | (Mirroring::HORIZONTAL, 0x2800)
+        | (Mirroring::HORIZONTAL, 0x2C00) => {
+            ( &ppu.vram[0x400 .. 0x800], &ppu.vram[0 .. 0x400])
+        },
+        (_, _) => {
+            panic!("unsupported mirroring {:?}", ppu.mirroring);
+        }
+    };
+
+    render_name_table(ppu, frame,
+        main_name_table,
+        ViewRect::new(scroll_x, scroll_y, 256, 240 ),
+        -(scroll_x as isize), -(scroll_y as isize)
+    );
+    if scroll_x > 0 {
+        render_name_table(ppu, frame,
+            second_name_table,
+            ViewRect::new(0, 0, scroll_x, 240),
+            (256 - scroll_x) as isize, 0
+        );
+    } else if scroll_y > 0 {
+        render_name_table(ppu, frame,
+            second_name_table,
+            ViewRect::new(0, 0, 256, scroll_y),
+            0, (240 - scroll_y) as isize
+        );
     }
 
     for i in (0 .. ppu.oam_data.len()).step_by(4).rev() {
